@@ -1,5 +1,7 @@
 #pragma once
 #include "window.hpp"
+#include "pipeline.hpp"
+#include "device.hpp"
 
 class App
 {
@@ -10,7 +12,9 @@ public:
 	void run();
 
 private:
+
 	Window window{ WIDTH, HEIGHT, "window" };
-
-
+	Pipeline pipeline{ "shaders/vert.spv", "shaders/frag.spv" };
+	Device device{};
 };
+

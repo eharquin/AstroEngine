@@ -13,6 +13,7 @@ public:
 	Window(int w, int h, std::string name);
 	~Window();
 
+	// not copyable
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
 
