@@ -1,5 +1,5 @@
 #include "instance.hpp"
-#include "debug_messenger.hpp"
+#include "utils.hpp"
 
 // libs
 #include <GLFW/glfw3.h>
@@ -46,12 +46,26 @@ void Instance::createInstance()
     // get required extensions
     std::vector<const char*> requiredExtensions = getRequiredExtensions();
     uint32_t requiredExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-    if (printExtensions)
+    if (printExtensions) // TODO create separate function
     {
         std::cout << "glfw uses extensions:\n";
         for (uint32_t i = 0; i < requiredExtensionCount; i++)
         {
-            std::cout << '\t' << requiredExtensions[i] << '\n';
+            std::cout << '\t' << requiredExtensions[i] << std::endl;
+        }
+    }
+
+    // get available instance extensions
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+    if (printExtensions) // TODO create separate function
+    {
+        std::cout << "available instance extensions:\n";
+        for (uint32_t i = 0; i < extensionCount; i++)
+        {
+            std::cout << '\t' << extensions[i].extensionName << " " << extensions[i].specVersion << std::endl;
         }
     }
 
@@ -59,7 +73,7 @@ void Instance::createInstance()
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers)
     {
-        DebugMessenger::populateDebugMessengerCreateInfo(debugCreateInfo);
+        Utils::populateDebugMessengerCreateInfo(debugCreateInfo);
     }
 
     // define instance creation info 
@@ -86,22 +100,6 @@ void Instance::createInstance()
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
         throw std::runtime_error("failed to create instance!");
-
-
-    // get instance extensions
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-    if (printExtensions)
-    {
-        std::cout << "glfw uses extensions:\n";
-        for (uint32_t i = 0; i < extensionCount; i++)
-        {
-            std::cout << '\t' << extensions[i].extensionName << " " << extensions[i].specVersion << '\n';
-        }
-    }
 }
 
 std::vector<const char*> Instance::getRequiredExtensions()

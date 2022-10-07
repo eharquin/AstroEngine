@@ -1,4 +1,5 @@
 #include "debug_messenger.hpp"
+#include "utils.hpp"
 
 DebugMessenger::DebugMessenger(Instance &instance) : instance(instance)
 {
@@ -7,18 +8,14 @@ DebugMessenger::DebugMessenger(Instance &instance) : instance(instance)
 
 DebugMessenger::~DebugMessenger()
 {
-    if (instance.enableValidationLayers)
-        DestroyDebugUtilsMessengerEXT(instance.getInstance(), debugMessenger, nullptr);
+    DestroyDebugUtilsMessengerEXT(instance.getVkInstance(), debugMessenger, nullptr);
 }
 
 void DebugMessenger::setupDebugMessenger()
 {
-    if (!instance.enableValidationLayers) // TODO
-        return;
-
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    populateDebugMessengerCreateInfo(createInfo);
+    Utils::populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(instance.getInstance(), &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+    if (CreateDebugUtilsMessengerEXT(instance.getVkInstance(), &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
         throw std::runtime_error("failed to set up debug messenger!");
 }

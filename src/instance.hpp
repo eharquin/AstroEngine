@@ -6,6 +6,7 @@
 // std
 #include <vector>
 
+
 class Instance
 {
 public:
@@ -22,7 +23,8 @@ public:
 	Instance();
 	~Instance();
 
-	VkInstance getInstance() { return instance; }
+	VkInstance getVkInstance() { return instance; }
+
 
 private:
 	VkInstance instance;
