@@ -2,16 +2,13 @@
 
 #include "instance.hpp"
 
-// libs
-#include <vulkan/vulkan.h>
-
 // std
 #include <iostream>
 
 class DebugMessenger
 {
 public:
-	DebugMessenger(Instance &instance);
+	DebugMessenger(Instance& instance);
 	~DebugMessenger();
 
 private:

@@ -6,7 +6,7 @@
 #include <set>
 
 
-PhysicalDevice::PhysicalDevice(Instance& instance, WindowSurface& windowSurface) : instance(instance), windowSurface(windowSurface)
+PhysicalDevice::PhysicalDevice(Instance& instance, Surface& surface) : instance(instance), surface(surface)
 {
 	pickPhysicalDevice();
 }
@@ -40,12 +40,12 @@ bool PhysicalDevice::isDeviceSuitable(VkPhysicalDevice device)
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-	Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(device, windowSurface.getVkSurfaceKHR());
+	Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(device, surface.getVkSurfaceKHR());
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
 
 	bool swapChainAdequate = false;
 	if (extensionsSupported) {
-		Utils::SwapChainSupportDetails swapChainSupport = Utils::querySwapChainSupport(device, windowSurface.getVkSurfaceKHR());
+		Utils::SwapChainSupportDetails swapChainSupport = Utils::querySwapChainSupport(device, surface.getVkSurfaceKHR());
 		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 	}
 

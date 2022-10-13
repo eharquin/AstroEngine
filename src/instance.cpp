@@ -24,7 +24,7 @@ void Instance::createInstance()
     if (enableValidationLayers && !checkValidationLayerSupport())
         throw std::runtime_error("validation layers requested, but not available!");
 
-    // define application Info
+    // define application Info, Name, Version
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "AE graphics app";
@@ -45,29 +45,9 @@ void Instance::createInstance()
 
     // get required extensions
     std::vector<const char*> requiredExtensions = getRequiredExtensions();
-    uint32_t requiredExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-    if (printExtensions) // TODO create separate function
-    {
-        std::cout << "glfw uses extensions:\n";
-        for (uint32_t i = 0; i < requiredExtensionCount; i++)
-        {
-            std::cout << '\t' << requiredExtensions[i] << std::endl;
-        }
-    }
-
+    
     // get available instance extensions
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    if (printExtensions) // TODO create separate function
-    {
-        std::cout << "available instance extensions:\n";
-        for (uint32_t i = 0; i < extensionCount; i++)
-        {
-            std::cout << '\t' << extensions[i].extensionName << " " << extensions[i].specVersion << std::endl;
-        }
-    }
+    std::vector<VkExtensionProperties> extensions = getInstanceExtensions();
 
     // get DebugMessenger info
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
@@ -84,7 +64,7 @@ void Instance::createInstance()
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledLayerCount = layerCount;
     createInfo.ppEnabledLayerNames = layerNames.data();
-    createInfo.enabledExtensionCount = requiredExtensionCount;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
     createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
 #ifdef __APPLE__
@@ -100,6 +80,22 @@ void Instance::createInstance()
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
         throw std::runtime_error("failed to create instance!");
+
+    // print extensions information
+    if (printInfo)
+    {
+        std::cout << "glfw uses extensions:\n";
+        for (auto const& extension : requiredExtensions)
+        {
+            std::cout << '\t' << extension << std::endl;
+        }
+
+        std::cout << "available instance extensions:\n";
+        for (auto const& extension : extensions)
+        {
+            std::cout << '\t' << extension.extensionName << " " << extension.specVersion << std::endl;
+        }
+    }
 }
 
 std::vector<const char*> Instance::getRequiredExtensions()
@@ -113,6 +109,15 @@ std::vector<const char*> Instance::getRequiredExtensions()
     if (enableValidationLayers)
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
+    return extensions;
+}
+
+std::vector<VkExtensionProperties> Instance::getInstanceExtensions()
+{
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
     return extensions;
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "logical_device.hpp"
 #include "window.hpp"
-#include "window_surface.hpp"
+#include "surface.hpp"
 #include "physical_device.hpp"
 
 // libs
@@ -14,18 +14,25 @@
 class SwapChain
 {
 public:
-	SwapChain(Window& window, WindowSurface& windowSurface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice);
+	SwapChain(Window& window, Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice);
 	~SwapChain();
+
+
+	VkSwapchainKHR getVkSwapChainKHR() { return swapChain; }
+	std::vector<VkImage> getVkImages() { return swapChainImages; }
+	VkFormat getVkFormat() { return swapChainImageFormat; }
+	VkExtent2D getVkExtent2D() { return swapChainExtent; }
 
 private:
 	VkSwapchainKHR swapChain;
-	Window& window;
-	WindowSurface& windowSurface;
-	PhysicalDevice& physicalDevice;
-	LogicalDevice& logicalDevice;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+	
+	Window& window;
+	Surface& surface;
+	PhysicalDevice& physicalDevice;
+	LogicalDevice& logicalDevice;
 
 	void createSwapChain();
 

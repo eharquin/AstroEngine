@@ -7,11 +7,11 @@
 #include "instance.hpp"
 #include "window.hpp"
 
-class WindowSurface
+class Surface
 {
 public:
-	WindowSurface(Window& window, Instance& instance);
-	~WindowSurface();
+	Surface(Window& window, Instance& instance);
+	~Surface();
 
 	VkSurfaceKHR getVkSurfaceKHR() { return surface; }
 

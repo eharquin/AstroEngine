@@ -4,7 +4,7 @@
 // std
 #include <set>
 
-LogicalDevice::LogicalDevice(PhysicalDevice& physicalDcevice, WindowSurface& windowSurface) : physicalDevice{physicalDcevice}, windowSurface(windowSurface)
+LogicalDevice::LogicalDevice(PhysicalDevice& physicalDcevice, Surface& surface) : physicalDevice{physicalDcevice}, surface(surface)
 {
 	createLogicalDevice();
 }
@@ -17,7 +17,7 @@ LogicalDevice::~LogicalDevice()
 void LogicalDevice::createLogicalDevice()
 {
 	// TODO change to not ask again for queueFamily
-	Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(physicalDevice.getVkPhysicalDevice(), windowSurface.getVkSurfaceKHR());
+	Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(physicalDevice.getVkPhysicalDevice(), surface.getVkSurfaceKHR());
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };

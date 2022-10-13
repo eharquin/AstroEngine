@@ -8,7 +8,7 @@
 #include <limits>
 #include <algorithm>
 
-SwapChain::SwapChain(Window& window, WindowSurface& windowSurface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice) : window(window), windowSurface(windowSurface), physicalDevice(physicalDevice), logicalDevice(logicalDevice)
+SwapChain::SwapChain(Window& window, Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice) : window(window), surface(surface), physicalDevice(physicalDevice), logicalDevice(logicalDevice)
 {
     createSwapChain();
 }
@@ -20,7 +20,7 @@ SwapChain::~SwapChain()
 
 void SwapChain::createSwapChain()
 {
-    Utils::SwapChainSupportDetails swapChainSupport = Utils::querySwapChainSupport(physicalDevice.getVkPhysicalDevice(), windowSurface.getVkSurfaceKHR());
+    Utils::SwapChainSupportDetails swapChainSupport = Utils::querySwapChainSupport(physicalDevice.getVkPhysicalDevice(), surface.getVkSurfaceKHR());
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -35,7 +35,7 @@ void SwapChain::createSwapChain()
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = nullptr; // optional
     createInfo.flags = 0; // optional
-    createInfo.surface = windowSurface.getVkSurfaceKHR();
+    createInfo.surface = surface.getVkSurfaceKHR();
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -43,7 +43,7 @@ void SwapChain::createSwapChain()
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(physicalDevice.getVkPhysicalDevice(), windowSurface.getVkSurfaceKHR());
+    Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(physicalDevice.getVkPhysicalDevice(), surface.getVkSurfaceKHR());
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily)
@@ -54,6 +54,7 @@ void SwapChain::createSwapChain()
     }
     else
     {
+        std::cout << "Exclusive" << std::endl;
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.queueFamilyIndexCount = 0; // Optional
         createInfo.pQueueFamilyIndices = nullptr; // Optional

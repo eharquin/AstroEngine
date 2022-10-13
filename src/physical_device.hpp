@@ -10,20 +10,20 @@
 
 
 #include "instance.hpp"
-#include "window_surface.hpp"
+#include "surface.hpp"
 
 class PhysicalDevice
 {
 public:
 
-	PhysicalDevice(Instance& instance, WindowSurface& surface);
+	PhysicalDevice(Instance& instance, Surface& surface);
 	
 	VkPhysicalDevice getVkPhysicalDevice() { return physicalDevice; }
 
 private:
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	Instance& instance;
-	WindowSurface& windowSurface;
+	Surface& surface;
 
 	void pickPhysicalDevice();
 
