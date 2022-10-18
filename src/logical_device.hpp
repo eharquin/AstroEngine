@@ -1,9 +1,10 @@
 #pragma once
+#include "physical_device.hpp"
 
 // libs
 #include <vulkan/vulkan_core.h>
 
-#include "physical_device.hpp"
+const int MAX_FRAMES_IN_FLIGHT = 2;
 
 class LogicalDevice
 {

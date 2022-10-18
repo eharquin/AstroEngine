@@ -8,8 +8,15 @@ RenderPass::RenderPass(LogicalDevice& logicalDevice, SwapChain& swapChain)
 
 RenderPass::~RenderPass()
 {
+	cleanup();
+}
+
+
+void RenderPass::cleanup()
+{
 	vkDestroyRenderPass(logicalDevice.getVkDevice(), renderPass, nullptr);
 }
+
 
 void RenderPass::createRenderPass()
 {

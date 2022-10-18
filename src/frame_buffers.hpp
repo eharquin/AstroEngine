@@ -12,6 +12,10 @@ public:
 	FrameBuffers(LogicalDevice& logicalDevice, SwapChain& swapChain, ImageViews& imageViews, RenderPass& renderPass);
 	~FrameBuffers();
 
+	void cleanup();
+
+	void createFrameBuffers();
+
 	std::vector<VkFramebuffer> getVkFramebuffer() { return swapChainFramebuffers; }
 
 private:
@@ -22,5 +26,4 @@ private:
 	ImageViews& imageViews;
 	RenderPass& renderPass;
 
-	void createFrameBuffers();
 };

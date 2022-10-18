@@ -13,10 +13,18 @@ SwapChain::SwapChain(Window& window, Surface& surface, PhysicalDevice& physicalD
     createSwapChain();
 }
 
+
 SwapChain::~SwapChain()
+{
+    cleanup();
+}
+
+
+void SwapChain::cleanup()
 {
     vkDestroySwapchainKHR(logicalDevice.getVkDevice(), swapChain, nullptr);
 }
+
 
 void SwapChain::createSwapChain()
 {
@@ -96,7 +104,6 @@ VkPresentModeKHR SwapChain::chooseSwapPresentMode(const std::vector<VkPresentMod
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             return availablePresentMode;
     }
-
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -108,17 +115,9 @@ VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilit
     }
     else
     {
-        int width, height;
-        glfwGetFramebufferSize(window.getGLFWWindow(), &width, &height);
-
-        VkExtent2D actualExtent = {
-            static_cast<uint32_t>(width),
-            static_cast<uint32_t>(height)
-        };
-
+        VkExtent2D actualExtent = window.getExtent();
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
         return actualExtent;
     }
 }

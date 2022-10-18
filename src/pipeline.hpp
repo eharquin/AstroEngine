@@ -16,6 +16,10 @@ public:
 
 	VkPipeline getVkPipeline() { return graphicsPipeline; }
 
+	void cleanup();
+
+	void createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath);
+
 private:
 	VkPipeline graphicsPipeline;
 
@@ -24,5 +28,4 @@ private:
 	PipelineLayout& pipelineLayout;
 	RenderPass& renderPass;
 
-	void createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath);
 };

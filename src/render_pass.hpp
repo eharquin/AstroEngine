@@ -9,6 +9,10 @@ public:
 	RenderPass(LogicalDevice& logicalDevice, SwapChain& swapChain);
 	~RenderPass();
 
+	void cleanup();
+
+	void createRenderPass();
+
 	VkRenderPass getVkRenderPass() { return renderPass; }
 
 private:
@@ -17,5 +21,4 @@ private:
 	LogicalDevice& logicalDevice;
 	SwapChain& swapChain;
 
-	void createRenderPass();
 };

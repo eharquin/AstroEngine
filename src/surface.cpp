@@ -15,6 +15,7 @@ Surface::~Surface()
 
 void Surface::createSurface()
 {
+	// use glfw lib to create a surface 
 	if (glfwCreateWindowSurface(instance.getVkInstance(), window.getGLFWWindow(), nullptr, &surface) != VK_SUCCESS)
 		throw std::runtime_error("failed to create window surface!");
 }

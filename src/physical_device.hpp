@@ -27,6 +27,7 @@ private:
 
 	void pickPhysicalDevice();
 
+	// DEPRECATED
 	bool isDeviceSuitable(VkPhysicalDevice device);
 
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);

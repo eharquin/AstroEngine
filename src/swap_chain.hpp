@@ -17,6 +17,9 @@ public:
 	SwapChain(Window& window, Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice);
 	~SwapChain();
 
+	void cleanup();
+
+	void createSwapChain();
 
 	VkSwapchainKHR getVkSwapChainKHR() { return swapChain; }
 	std::vector<VkImage> getVkImages() { return swapChainImages; }
@@ -34,7 +37,6 @@ private:
 	PhysicalDevice& physicalDevice;
 	LogicalDevice& logicalDevice;
 
-	void createSwapChain();
 
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

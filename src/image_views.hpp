@@ -9,6 +9,10 @@ public:
 	ImageViews(LogicalDevice& logicalDevice, SwapChain& swapChain);
 	~ImageViews();
 
+	void cleanup();
+
+	void createImageViews();
+
 	std::vector<VkImageView> getVkImageViews() { return swapChainImageViews; }
 
 private:
@@ -16,5 +20,4 @@ private:
 	LogicalDevice& logicalDevice;
 	SwapChain& swapChain;
 
-	void createImageViews();
 };

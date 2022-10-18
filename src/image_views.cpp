@@ -7,9 +7,16 @@ ImageViews::ImageViews(LogicalDevice& logicalDevice, SwapChain& swapChain) : log
 
 ImageViews::~ImageViews()
 {
+	cleanup();
+}
+
+
+void ImageViews::cleanup()
+{
 	for (auto imageView : swapChainImageViews)
 		vkDestroyImageView(logicalDevice.getVkDevice(), imageView, nullptr);
 }
+
 
 void ImageViews::createImageViews()
 {

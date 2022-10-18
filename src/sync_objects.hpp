@@ -7,14 +7,14 @@ public:
 	SyncObjects(LogicalDevice& logicalDevice);
 	~SyncObjects();
 
-	VkFence getVkFence() { return inFlightFence; }
-	VkSemaphore getImageAvailableSemaphore() { return imageAvailableSemaphore; }
-	VkSemaphore getRenderFinishedSemaphore() { return renderFinishedSemaphore; }
+	std::vector<VkSemaphore> getImageAvailableSemaphores() { return imageAvailableSemaphores; }
+	std::vector<VkSemaphore> getRenderFinishedSemaphores() { return renderFinishedSemaphores; }
+	std::vector<VkFence> getVkFences() { return inFlightFences; }
 
 private:
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
-	VkFence inFlightFence;
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkFence> inFlightFences;
 
 	LogicalDevice& logicalDevice;
 

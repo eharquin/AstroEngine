@@ -1,7 +1,7 @@
 #include "command_buffer.hpp"
 
-CommandBuffer::CommandBuffer(LogicalDevice& logicalDevice, SwapChain& swapChain, RenderPass& renderPass, Pipeline& pipeline, FrameBuffers& frameBuffers, CommandPool& commandPool)
-	: logicalDevice(logicalDevice), swapChain(swapChain), renderPass(renderPass), pipeline(pipeline), frameBuffers(frameBuffers), commandPool(commandPool)
+CommandBuffer::CommandBuffer(LogicalDevice& logicalDevice, SwapChain& swapChain, RenderPass& renderPass, Pipeline& pipeline, FrameBuffers& frameBuffers, CommandPool& commandPool, VertexBuffer& vertexBuffer)
+	: logicalDevice(logicalDevice), swapChain(swapChain), renderPass(renderPass), pipeline(pipeline), frameBuffers(frameBuffers), commandPool(commandPool), vertexBuffer(vertexBuffer)
 {
 	createCommandBuffer();
 }
@@ -10,7 +10,7 @@ CommandBuffer::~CommandBuffer()
 {
 }
 
-void CommandBuffer::record(uint32_t imageIndex)
+void CommandBuffer::record(uint32_t bufferIndex, uint32_t imageIndex)
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -18,11 +18,12 @@ void CommandBuffer::record(uint32_t imageIndex)
 	beginInfo.flags = 0; // optional
 	beginInfo.pInheritanceInfo = nullptr; // optional
 
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+	if (vkBeginCommandBuffer(commandBuffers[bufferIndex], &beginInfo) != VK_SUCCESS)
 		throw std::runtime_error("failed to begin recording command buffer!");
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.pNext = nullptr;
     renderPassInfo.renderPass = renderPass.getVkRenderPass();
     renderPassInfo.framebuffer = frameBuffers.getVkFramebuffer()[imageIndex];
     renderPassInfo.renderArea.offset = { 0, 0 };
@@ -32,9 +33,9 @@ void CommandBuffer::record(uint32_t imageIndex)
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffers[bufferIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
+    vkCmdBindPipeline(commandBuffers[bufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -43,30 +44,34 @@ void CommandBuffer::record(uint32_t imageIndex)
     viewport.height = (float)swapChain.getVkExtent2D().height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetViewport(commandBuffers[bufferIndex], 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
     scissor.extent = swapChain.getVkExtent2D();
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    vkCmdSetScissor(commandBuffers[bufferIndex], 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    vertexBuffer.bind(commandBuffers[bufferIndex]);
 
-    vkCmdEndRenderPass(commandBuffer);
+    vkCmdDraw(commandBuffers[bufferIndex], static_cast<uint32_t>(vertexBuffer.getSize()), 1, 0, 0);
 
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+    vkCmdEndRenderPass(commandBuffers[bufferIndex]);
+
+    if (vkEndCommandBuffer(commandBuffers[bufferIndex]) != VK_SUCCESS)
         throw std::runtime_error("failed to record command buffer!");
 }
 
 void CommandBuffer::createCommandBuffer()
 {
+    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.pNext = nullptr;
 	allocInfo.commandPool = commandPool.getVkCommandPool();;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
+	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-	if (vkAllocateCommandBuffers(logicalDevice.getVkDevice(), &allocInfo, &commandBuffer) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(logicalDevice.getVkDevice(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 		throw std::runtime_error("failed to allocate command buffers!");
 }

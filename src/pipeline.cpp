@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "shader.hpp"
+#include "vertex.hpp"
 
 Pipeline::Pipeline(LogicalDevice& logicalDevice, SwapChain& swapChain, PipelineLayout& pipelineLayout, RenderPass& renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
 	: logicalDevice(logicalDevice), swapChain(swapChain), pipelineLayout(pipelineLayout), renderPass(renderPass)
@@ -12,6 +13,11 @@ Pipeline::Pipeline(LogicalDevice& logicalDevice, SwapChain& swapChain, PipelineL
 }
 
 Pipeline::~Pipeline()
+{
+	cleanup();
+}
+
+void Pipeline::cleanup()
 {
 	vkDestroyPipeline(logicalDevice.getVkDevice(), graphicsPipeline, nullptr);
 }
@@ -41,7 +47,6 @@ void Pipeline::createGraphicsPipeline(const std::string& vertexFilepath, const s
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-
 	std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
 	VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -51,14 +56,17 @@ void Pipeline::createGraphicsPipeline(const std::string& vertexFilepath, const s
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 
+	auto bindingDescription = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.pNext = nullptr; // optional
 	vertexInputInfo.flags = 0; // optional
-	vertexInputInfo.vertexBindingDescriptionCount = 0; // optional
-	vertexInputInfo.pVertexBindingDescriptions = nullptr; // optional
-	vertexInputInfo.vertexAttributeDescriptionCount = 0; // optional
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr; // optional
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

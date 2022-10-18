@@ -7,6 +7,8 @@
 // std
 #include <string>
 
+//static bool framebufferResized = false;
+
 class Window
 {
 public:
@@ -18,14 +20,21 @@ public:
 	Window& operator=(const Window&) = delete;
 
 	bool shouldClose() { return glfwWindowShouldClose(window); }
-
+	VkExtent2D getExtent() { return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) }; }
 	GLFWwindow* getGLFWWindow() { return window; }
+	//bool wasWindowResized() { return framebufferResized; }
+	//void resetWindowResizedFlag() { framebufferResized = false; }
 
+	int getFramebufferSize(int* width, int* height);
+
+	bool framebufferResized = false;
 private:
 	void initWindow();
 
-	const int width;
-	const int height;
+	int width;
+	int height;
+
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 	std::string windowName;
 	GLFWwindow* window;

@@ -9,6 +9,12 @@ FrameBuffers::FrameBuffers(LogicalDevice& logicalDevice, SwapChain& swapChain, I
 
 FrameBuffers::~FrameBuffers()
 {
+    cleanup();
+}
+
+
+void FrameBuffers::cleanup()
+{
     for (auto framebuffer : swapChainFramebuffers)
         vkDestroyFramebuffer(logicalDevice.getVkDevice(), framebuffer, nullptr);
 }

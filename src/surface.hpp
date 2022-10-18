@@ -17,6 +17,7 @@ public:
 
 private:
 	VkSurfaceKHR surface;
+
 	Window& window;
 	Instance& instance;
 
