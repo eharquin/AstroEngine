@@ -4,7 +4,8 @@
 // std
 #include <set>
 
-LogicalDevice::LogicalDevice(PhysicalDevice& physicalDcevice, Surface& surface) : physicalDevice{physicalDcevice}, surface(surface)
+LogicalDevice::LogicalDevice(PhysicalDevice& physicalDcevice)
+	: physicalDevice{physicalDcevice}
 {
 	createLogicalDevice();
 }
@@ -16,8 +17,7 @@ LogicalDevice::~LogicalDevice()
 
 void LogicalDevice::createLogicalDevice()
 {
-	// TODO change to not ask again for queueFamily
-	Utils::QueueFamilyIndices indices = Utils::findQueueFamilies(physicalDevice.getVkPhysicalDevice(), surface.getVkSurfaceKHR());
+	PhysicalDevice::QueueFamilyIndices indices = physicalDevice.getQueueFamilyIndices();
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -45,8 +45,8 @@ void LogicalDevice::createLogicalDevice()
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.enabledLayerCount = 0; // deprecated
 	createInfo.ppEnabledLayerNames = nullptr; // deprecated
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(Utils::deviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = Utils::deviceExtensions.data();
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(physicalDevice.deviceExtensions.size());
+	createInfo.ppEnabledExtensionNames = physicalDevice.deviceExtensions.data();
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
 	if (vkCreateDevice(physicalDevice.getVkPhysicalDevice(), &createInfo, nullptr, &device) != VK_SUCCESS)

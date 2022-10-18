@@ -4,7 +4,7 @@
 class CommandPool
 {
 public:
-	CommandPool(Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice);
+	CommandPool(PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice);
 	~CommandPool();
 
 	VkCommandPool getVkCommandPool() { return commandPool; }
@@ -12,7 +12,6 @@ public:
 private:
 	VkCommandPool commandPool;
 
-	Surface& surface;
 	PhysicalDevice& physicalDevice;
 	LogicalDevice& logicalDevice;
 

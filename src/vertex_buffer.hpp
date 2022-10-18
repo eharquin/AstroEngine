@@ -9,7 +9,6 @@
 
 // std
 #include <vector>
-#include "pipeline.hpp"
 
 class VertexBuffer
 {

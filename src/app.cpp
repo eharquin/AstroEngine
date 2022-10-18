@@ -1,8 +1,13 @@
+// astro
 #include "app.hpp"
+
+// std
+#include <iostream>
 
 App::App()
 {
-
+	createSwapChain();
+	createPipeline();
 }
 
 App::~App() {}
@@ -55,6 +60,16 @@ void App::processInput(GLFWwindow* window)
 	}
 }
 
+void App::createSwapChain()
+{
+
+}
+
+void App::createPipeline()
+{
+
+}
+
 void App::drawFrame()
 {
 	std::vector<VkCommandBuffer> commandBuffers = commandBuffer.getVkCommandBuffers();
@@ -66,10 +81,8 @@ void App::drawFrame()
 	vkWaitForFences(logicalDevice.getVkDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(logicalDevice.getVkDevice(), 1, &inFlightFences[currentFrame]);
 
-	VkSwapchainKHR swapChainTemp = swapChain.getVkSwapChainKHR();
-
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(logicalDevice.getVkDevice(), swapChainTemp, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(logicalDevice.getVkDevice(), agSwapChain.getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 	if (window.wasWindowResized())
 		std::cout << "okok";
@@ -89,7 +102,7 @@ void App::drawFrame()
 	vkResetFences(logicalDevice.getVkDevice(), 1, &inFlightFences[currentFrame]);
 
 	vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-	commandBuffer.record(currentFrame, imageIndex);
+	commandBuffer.record(agSwapChain, pipeline, vertexBuffer, currentFrame, imageIndex);
 
 	VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -112,7 +125,7 @@ void App::drawFrame()
 	if (vkQueueSubmit(logicalDevice.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
 		throw std::runtime_error("failed to submit draw command buffer!");
 
-	VkSwapchainKHR swapChains[] = { swapChainTemp };
+	VkSwapchainKHR swapChains[] = { agSwapChain.getSwapChain() };
 
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -150,13 +163,6 @@ void App::recreateSwapChain()
 
 	vkDeviceWaitIdle(logicalDevice.getVkDevice());
 
-	frameBuffers.cleanup();
-	imageViews.cleanup();
-	swapChain.cleanup();
-
-	swapChain.createSwapChain();
-	imageViews.createImageViews();
-	frameBuffers.createFrameBuffers();
 }
 
 std::vector<Vertex> App::generateSierpinskiTriangleVertex(int n, Vertex up, Vertex left, Vertex right)

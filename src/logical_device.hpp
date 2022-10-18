@@ -9,7 +9,7 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 class LogicalDevice
 {
 public:
-	LogicalDevice(PhysicalDevice& physicalDevice, Surface& surface);
+	LogicalDevice(PhysicalDevice& physicalDevice);
 	~LogicalDevice();
 
 	VkDevice getVkDevice() { return device; }
@@ -21,7 +21,6 @@ private:
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	PhysicalDevice& physicalDevice;
-	Surface& surface;
 
 	void createLogicalDevice();
 };

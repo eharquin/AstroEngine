@@ -3,7 +3,7 @@
 // std
 #include <stdexcept>
 
-Surface::Surface(Window& window, Instance& instance) : window{window}, instance{instance}
+Surface::Surface(Window& window, AgInstance& instance) : window{window}, instance{instance}
 {
 	createSurface();
 }

@@ -1,4 +1,4 @@
-#include "instance.hpp"
+#include "ag_instance.hpp"
 #include "utils.hpp"
 
 // libs
@@ -9,17 +9,23 @@
 #include <iostream>
 #include <vector>
 
-Instance::Instance()
+AgInstance::AgInstance()
 {
     createInstance();
+
+    if (enableValidationLayers)
+        setupDebugMessenger();
 }
 
-Instance::~Instance()
+AgInstance::~AgInstance()
 {
+    if (enableValidationLayers)
+        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+
     vkDestroyInstance(instance, nullptr);
 }
 
-void Instance::createInstance()
+void AgInstance::createInstance()
 {
     if (enableValidationLayers && !checkValidationLayerSupport())
         throw std::runtime_error("validation layers requested, but not available!");
@@ -98,7 +104,16 @@ void Instance::createInstance()
     }
 }
 
-std::vector<const char*> Instance::getRequiredExtensions()
+void AgInstance::setupDebugMessenger()
+{
+    VkDebugUtilsMessengerCreateInfoEXT createInfo;
+    Utils::populateDebugMessengerCreateInfo(createInfo);
+
+    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+        throw std::runtime_error("failed to set up debug messenger!");
+}
+
+std::vector<const char*> AgInstance::getRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensionsNames = nullptr;
@@ -112,7 +127,7 @@ std::vector<const char*> Instance::getRequiredExtensions()
     return extensions;
 }
 
-std::vector<VkExtensionProperties> Instance::getInstanceExtensions()
+std::vector<VkExtensionProperties> AgInstance::getInstanceExtensions()
 {
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -121,7 +136,7 @@ std::vector<VkExtensionProperties> Instance::getInstanceExtensions()
     return extensions;
 }
 
-bool Instance::checkValidationLayerSupport()
+bool AgInstance::checkValidationLayerSupport()
 {
     // get instance layers
     uint32_t layerCount;

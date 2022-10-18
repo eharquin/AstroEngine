@@ -1,8 +1,9 @@
+// astro
 #include "command_pool.hpp"
-#include "utils.hpp"
+#include "physical_device.hpp"
 
-CommandPool::CommandPool(Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice)
-	: surface(surface), physicalDevice(physicalDevice), logicalDevice(logicalDevice)
+CommandPool::CommandPool(PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice)
+	: physicalDevice(physicalDevice), logicalDevice(logicalDevice)
 {
 	createCommandPool();
 }
@@ -14,7 +15,7 @@ CommandPool::~CommandPool()
 
 void CommandPool::createCommandPool()
 {
-	Utils::QueueFamilyIndices queueFamilyIndices = Utils::findQueueFamilies(physicalDevice.getVkPhysicalDevice(), surface.getVkSurfaceKHR());
+	PhysicalDevice::QueueFamilyIndices queueFamilyIndices = physicalDevice.getQueueFamilyIndices();
 
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

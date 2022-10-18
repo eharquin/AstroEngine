@@ -19,21 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ag_swap_chain.cpp" />
     <ClCompile Include="src\app.cpp" />
     <ClCompile Include="src\command_buffer.cpp" />
     <ClCompile Include="src\command_pool.cpp" />
-    <ClCompile Include="src\debug_messenger.cpp" />
-    <ClCompile Include="src\frame_buffers.cpp" />
-    <ClCompile Include="src\image_views.cpp" />
-    <ClCompile Include="src\instance.cpp" />
+    <ClCompile Include="src\ag_instance.cpp" />
     <ClCompile Include="src\logical_device.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\physical_device.cpp" />
-    <ClCompile Include="src\pipeline.cpp" />
-    <ClCompile Include="src\pipeline_layout.cpp" />
-    <ClCompile Include="src\render_pass.cpp" />
+    <ClCompile Include="src\ag_pipeline.cpp" />
     <ClCompile Include="src\shader.cpp" />
-    <ClCompile Include="src\swap_chain.cpp" />
     <ClCompile Include="src\sync_objects.cpp" />
     <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\vertex.cpp" />
@@ -46,20 +41,15 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ag_swap_chain.hpp" />
     <ClInclude Include="src\app.hpp" />
     <ClInclude Include="src\command_buffer.hpp" />
     <ClInclude Include="src\command_pool.hpp" />
-    <ClInclude Include="src\debug_messenger.hpp" />
-    <ClInclude Include="src\frame_buffers.hpp" />
-    <ClInclude Include="src\image_views.hpp" />
-    <ClInclude Include="src\instance.hpp" />
+    <ClInclude Include="src\ag_instance.hpp" />
     <ClInclude Include="src\logical_device.hpp" />
     <ClInclude Include="src\physical_device.hpp" />
-    <ClInclude Include="src\pipeline.hpp" />
-    <ClInclude Include="src\pipeline_layout.hpp" />
-    <ClInclude Include="src\render_pass.hpp" />
+    <ClInclude Include="src\ag_pipeline.hpp" />
     <ClInclude Include="src\shader.hpp" />
-    <ClInclude Include="src\swap_chain.hpp" />
     <ClInclude Include="src\sync_objects.hpp" />
     <ClInclude Include="src\utils.hpp" />
     <ClInclude Include="src\vertex.hpp" />

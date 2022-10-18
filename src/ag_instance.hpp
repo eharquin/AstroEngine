@@ -1,0 +1,57 @@
+#pragma once
+
+// libs
+#include <vulkan/vulkan.h>
+
+// std
+#include <vector>
+
+#ifdef NDEBUG
+	const bool printInfo = true;
+	const bool enableValidationLayers = false;
+#else
+	const bool printInfo = true;
+	const bool enableValidationLayers = true;
+#endif // DEBUG
+
+class AgInstance
+{
+public:
+	
+	const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+
+	AgInstance();
+	~AgInstance();
+
+	VkInstance getVkInstance() { return instance; }
+
+
+private:
+	VkInstance instance;
+	VkDebugUtilsMessengerEXT debugMessenger;
+	
+	void createInstance();
+	void setupDebugMessenger();
+
+	std::vector<const char*> getRequiredExtensions();
+
+	std::vector<VkExtensionProperties> getInstanceExtensions();
+
+	bool checkValidationLayerSupport();
+
+	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+	{
+		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+		if (func != nullptr)
+			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+		else
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+
+	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+	{
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+		if (func != nullptr)
+			func(instance, debugMessenger, pAllocator);
+	}
+};

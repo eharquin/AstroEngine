@@ -2,17 +2,12 @@
 
 // astro
 #include "window.hpp"
-#include "pipeline.hpp"
-#include "instance.hpp"
-#include "debug_messenger.hpp"
+#include "ag_instance.hpp"
 #include "physical_device.hpp"
 #include "logical_device.hpp"
+#include "ag_swap_chain.hpp"
+#include "ag_pipeline.hpp"
 #include "surface.hpp"
-#include "swap_chain.hpp"
-#include "image_views.hpp"
-#include "render_pass.hpp"
-#include "pipeline_layout.hpp"
-#include "frame_buffers.hpp"
 #include "command_pool.hpp"
 #include "command_buffer.hpp"
 #include "sync_objects.hpp"
@@ -24,6 +19,7 @@
 
 // std
 #include <vector>
+#include <memory>
 
 class App
 {
@@ -48,23 +44,21 @@ private:
 
 	Window window{ WIDTH, HEIGHT, "window" };
 
-	Instance instance{};
-	DebugMessenger debugMessenger{ instance }; // TODO nest DebugMessenger inside Instance object (VS problem with mutual inclusion)
+	AgInstance instance{};
+	
 	Surface surface{ window, instance };
 	PhysicalDevice physicalDevice{ instance, surface };
+	LogicalDevice logicalDevice{ physicalDevice };
 
-	LogicalDevice logicalDevice{ physicalDevice, surface };
-	SwapChain swapChain{ window, surface, physicalDevice, logicalDevice };
-	ImageViews imageViews{ logicalDevice, swapChain };
-	PipelineLayout pipelineLayout{ logicalDevice };
-	RenderPass renderPass{ logicalDevice, swapChain };
-	Pipeline pipeline{ logicalDevice, swapChain, pipelineLayout, renderPass, "shaders/vert.spv", "shaders/frag.spv" };
-	FrameBuffers frameBuffers{ logicalDevice, swapChain, imageViews, renderPass };
-	CommandPool commandPool{ surface, physicalDevice, logicalDevice };
+	AgSwapChain agSwapChain{ window, surface, physicalDevice, logicalDevice };
+	AgPipeline pipeline{ logicalDevice, agSwapChain, "shaders/vert.spv", "shaders/frag.spv" };
+	CommandPool commandPool{ physicalDevice, logicalDevice };
 	VertexBuffer vertexBuffer{ physicalDevice, logicalDevice, 1024 * 100 };
-	CommandBuffer commandBuffer{ logicalDevice, swapChain, renderPass, pipeline, frameBuffers, commandPool , vertexBuffer};
+	CommandBuffer commandBuffer{ logicalDevice, commandPool};
 	SyncObjects syncObjects{ logicalDevice };
 
+	void createSwapChain();
+	void createPipeline();
 
 	void drawFrame();
 

@@ -1,4 +1,4 @@
-#include "pipeline.hpp"
+#include "ag_pipeline.hpp"
 
 // std
 #include <stdexcept>
@@ -6,23 +6,35 @@
 #include "shader.hpp"
 #include "vertex.hpp"
 
-Pipeline::Pipeline(LogicalDevice& logicalDevice, SwapChain& swapChain, PipelineLayout& pipelineLayout, RenderPass& renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
-	: logicalDevice(logicalDevice), swapChain(swapChain), pipelineLayout(pipelineLayout), renderPass(renderPass)
+AgPipeline::AgPipeline(LogicalDevice& logicalDevice, AgSwapChain& agSwapChain, const std::string& vertexFilepath, const std::string& fragmentFilepath)
+	: logicalDevice(logicalDevice), agSwapChain(agSwapChain)
 {
+	createPipelineLayout();
 	createGraphicsPipeline(vertexFilepath, fragmentFilepath);
 }
 
-Pipeline::~Pipeline()
+AgPipeline::~AgPipeline()
 {
-	cleanup();
+	vkDestroyPipeline(logicalDevice.getVkDevice(), pipeline, nullptr);
+	vkDestroyPipelineLayout(logicalDevice.getVkDevice(), pipelineLayout, nullptr);
 }
 
-void Pipeline::cleanup()
+void AgPipeline::createPipelineLayout()
 {
-	vkDestroyPipeline(logicalDevice.getVkDevice(), graphicsPipeline, nullptr);
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.pNext = nullptr; // optional
+	pipelineLayoutInfo.flags = 0; // optional
+	pipelineLayoutInfo.setLayoutCount = 0; // optional
+	pipelineLayoutInfo.pSetLayouts = nullptr; // optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
+	pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
+
+	if (vkCreatePipelineLayout(logicalDevice.getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+		throw std::runtime_error("failed to create pipeline layout!");
 }
 
-void Pipeline::createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath)
+void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath)
 {
 	Shader vertexShader { logicalDevice, vertexFilepath };
 	Shader fragmentShader{ logicalDevice, fragmentFilepath };
@@ -75,18 +87,19 @@ void Pipeline::createGraphicsPipeline(const std::string& vertexFilepath, const s
 	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
+	VkExtent2D extent = agSwapChain.getExtent();
 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = (float)swapChain.getVkExtent2D().width;
-	viewport.height = (float)swapChain.getVkExtent2D().height;
+	viewport.width = (float)extent.width;
+	viewport.height = (float)extent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
-	scissor.extent = swapChain.getVkExtent2D();
+	scissor.extent = extent;
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -162,13 +175,13 @@ void Pipeline::createGraphicsPipeline(const std::string& vertexFilepath, const s
 	pipelineInfo.pDepthStencilState = nullptr; // optional
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
-	pipelineInfo.layout = pipelineLayout.getVkPipelineLayout();
-	pipelineInfo.renderPass = renderPass.getVkRenderPass();
+	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.renderPass = agSwapChain.getRenderPass();
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // optional
 	pipelineInfo.basePipelineIndex = -1; // optional
 
-	if (vkCreateGraphicsPipelines(logicalDevice.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
+	if (vkCreateGraphicsPipelines(logicalDevice.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 		throw std::runtime_error("failed to create graphics pipeline!");
 	
 	// shader are delete here
