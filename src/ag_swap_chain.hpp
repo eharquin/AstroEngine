@@ -1,18 +1,21 @@
 #pragma once
 
 // astro
-#include "logical_device.hpp"
+#include "ag_device.hpp"
 
 // libs
 #include <vulkan/vulkan_core.h>
 
 // std
 #include <vector>
+#include <memory>
 
 class AgSwapChain
 {
 public:
-	AgSwapChain(Window& window, Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice);
+	AgSwapChain(AgDevice& agDevice, VkExtent2D windowExtent);
+	AgSwapChain(AgDevice& agDevice, VkExtent2D windowExtent, std::shared_ptr<AgSwapChain> oldSwapChain);
+
 	~AgSwapChain();
 
 	VkSwapchainKHR getSwapChain() { return swapChain; }
@@ -24,7 +27,9 @@ public:
 
 private:
 	// swap chain 
+	VkExtent2D windowExtent;
 	VkSwapchainKHR swapChain;
+	std::shared_ptr<AgSwapChain> oldSwapChain;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
@@ -40,10 +45,7 @@ private:
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	// astro ref
-	Window& window;
-	Surface& surface;
-	PhysicalDevice& physicalDevice;
-	LogicalDevice& logicalDevice;
+	AgDevice& agDevice;
 
 	void createSwapChain();
 	void createImageViews();

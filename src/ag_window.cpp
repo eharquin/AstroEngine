@@ -1,21 +1,21 @@
 // astro
-#include "window.hpp"
+#include "ag_window.hpp"
 
 // std
 #include <iostream>
 
-Window::Window(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
+AgWindow::AgWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
 {
 	initWindow();
 }
 
-Window::~Window()
+AgWindow::~AgWindow()
 {
 	glfwDestroyWindow(window);
 	glfwTerminate();
 }
 
-int Window::getFramebufferSize(int* width, int* height)
+int AgWindow::getFramebufferSize(int* width, int* height)
 {
 	glfwGetFramebufferSize(window, width, height);
 	
@@ -25,7 +25,7 @@ int Window::getFramebufferSize(int* width, int* height)
 	return 1;
 }
 
-void Window::initWindow()
+void AgWindow::initWindow()
 {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -36,9 +36,9 @@ void Window::initWindow()
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
-void Window::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
+void AgWindow::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
 {
-	auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+	auto window = reinterpret_cast<AgWindow*>(glfwGetWindowUserPointer(glfwWindow));
 	window->framebufferResized = true;
 	window->width = width;
 	window->height = height;

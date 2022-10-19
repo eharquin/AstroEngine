@@ -1,16 +1,19 @@
-#include "command_buffer.hpp"
+#include "ag_command_buffer.hpp"
+#include <stdexcept>
 
-CommandBuffer::CommandBuffer(LogicalDevice& logicalDevice, CommandPool& commandPool)
-	: logicalDevice(logicalDevice), commandPool(commandPool)
+AgCommandBuffer::AgCommandBuffer(AgDevice& agDevice)
+	: agDevice(agDevice)
 {
+    createCommandPool();
 	createCommandBuffer();
 }
 
-CommandBuffer::~CommandBuffer()
+AgCommandBuffer::~AgCommandBuffer()
 {
+    vkDestroyCommandPool(agDevice.getDevice(), commandPool, nullptr);
 }
 
-void CommandBuffer::record(AgSwapChain& agSwapChain, AgPipeline& pipeline, VertexBuffer& vertexBuffer, uint32_t bufferIndex, uint32_t imageIndex)
+void AgCommandBuffer::record(AgSwapChain* agSwapChain, AgPipeline* agPipeline, VertexBuffer& vertexBuffer, uint32_t bufferIndex, uint32_t imageIndex)
 {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -24,10 +27,10 @@ void CommandBuffer::record(AgSwapChain& agSwapChain, AgPipeline& pipeline, Verte
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.pNext = nullptr;
-    renderPassInfo.renderPass = agSwapChain.getRenderPass();
-    renderPassInfo.framebuffer = agSwapChain.getFramebuffer(imageIndex);
+    renderPassInfo.renderPass = agSwapChain->getRenderPass();
+    renderPassInfo.framebuffer = agSwapChain->getFramebuffer(imageIndex);
     renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = agSwapChain.getExtent();
+    renderPassInfo.renderArea.extent = agSwapChain->getExtent();
 
     VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
     renderPassInfo.clearValueCount = 1;
@@ -35,9 +38,9 @@ void CommandBuffer::record(AgSwapChain& agSwapChain, AgPipeline& pipeline, Verte
 
     vkCmdBeginRenderPass(commandBuffers[bufferIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffers[bufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
+    vkCmdBindPipeline(commandBuffers[bufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, agPipeline->getVkPipeline());
 
-    VkExtent2D extent = agSwapChain.getExtent();
+    VkExtent2D extent = agSwapChain->getExtent();
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -63,17 +66,31 @@ void CommandBuffer::record(AgSwapChain& agSwapChain, AgPipeline& pipeline, Verte
         throw std::runtime_error("failed to record command buffer!");
 }
 
-void CommandBuffer::createCommandBuffer()
+void AgCommandBuffer::createCommandPool()
 {
-    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    AgDevice::QueueFamilyIndices queueFamilyIndices = agDevice.findQueueFamilies(agDevice.getPhysicalDevice());
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.pNext = nullptr; // optional
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(agDevice.getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+        throw std::runtime_error("failed to create command pool!");
+}
+
+void AgCommandBuffer::createCommandBuffer()
+{
+    commandBuffers.resize(3);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.pNext = nullptr;
-	allocInfo.commandPool = commandPool.getVkCommandPool();;
+    allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-	if (vkAllocateCommandBuffers(logicalDevice.getVkDevice(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(agDevice.getDevice(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 		throw std::runtime_error("failed to allocate command buffers!");
 }

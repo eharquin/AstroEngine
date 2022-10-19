@@ -5,6 +5,7 @@
 
 // std
 #include <vector>
+#include <iostream>
 
 #ifdef NDEBUG
 	const bool printInfo = true;
@@ -23,7 +24,7 @@ public:
 	AgInstance();
 	~AgInstance();
 
-	VkInstance getVkInstance() { return instance; }
+	VkInstance getInstance() { return instance; }
 
 
 private:
@@ -39,6 +40,8 @@ private:
 
 	bool checkValidationLayerSupport();
 
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 	{
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -53,5 +56,11 @@ private:
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 		if (func != nullptr)
 			func(instance, debugMessenger, pAllocator);
+	}
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+	{
+		std::cerr << "validation layer: " << messageSeverity << " " << messageType << " " << pCallbackData->pMessage << std::endl;
+		return VK_FALSE;
 	}
 };

@@ -1,6 +1,5 @@
 // astro
 #include "ag_swap_chain.hpp"
-#include "utils.hpp"
 
 // libs
 
@@ -8,8 +7,8 @@
 #include <algorithm>
 
 
-AgSwapChain::AgSwapChain(Window& window, Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice)
-    : window(window), surface(surface), physicalDevice(physicalDevice), logicalDevice(logicalDevice)
+AgSwapChain::AgSwapChain(AgDevice& agDevice, VkExtent2D windowExtent)
+    : agDevice(agDevice), windowExtent(windowExtent)
 {
 	createSwapChain();
 	createImageViews();
@@ -17,26 +16,40 @@ AgSwapChain::AgSwapChain(Window& window, Surface& surface, PhysicalDevice& physi
 	createFrameBuffers();
 }
 
+AgSwapChain::AgSwapChain(AgDevice& agDevice, VkExtent2D windowExtent, std::shared_ptr<AgSwapChain> oldSwapChain)
+    : agDevice(agDevice), windowExtent(windowExtent), oldSwapChain{oldSwapChain}
+{
+    createSwapChain();
+    createImageViews();
+    createRenderPass();
+    createFrameBuffers();
+
+    oldSwapChain = nullptr;
+}
+
 AgSwapChain::~AgSwapChain()
 {
+    std::cout << "Destroy swap chain" << std::endl;
+
 	// destroy framebuffers
 	for (auto framebuffer : swapChainFramebuffers)
-		vkDestroyFramebuffer(logicalDevice.getVkDevice(), framebuffer, nullptr);
+		vkDestroyFramebuffer(agDevice.getDevice(), framebuffer, nullptr);
 
 	// destroy render pass
-	vkDestroyRenderPass(logicalDevice.getVkDevice(), renderPass, nullptr);
+	vkDestroyRenderPass(agDevice.getDevice(), renderPass, nullptr);
 
 	// destroy image views
 	for (auto imageView : swapChainImageViews)
-		vkDestroyImageView(logicalDevice.getVkDevice(), imageView, nullptr);
+		vkDestroyImageView(agDevice.getDevice(), imageView, nullptr);
 
 	// destroy swapChain
-	vkDestroySwapchainKHR(logicalDevice.getVkDevice(), swapChain, nullptr);
+	vkDestroySwapchainKHR(agDevice.getDevice(), swapChain, nullptr);
 }
 
 void AgSwapChain::createSwapChain()
 {
-    PhysicalDevice::SwapChainSupportDetails swapChainSupport = physicalDevice.getSwapChainSupportDetails();
+    // TODO : need to ask at each swapChain recreation
+    AgDevice::SwapChainSupportDetails swapChainSupport = agDevice.querySwapChainSupport(agDevice.getPhysicalDevice());
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -50,7 +63,7 @@ void AgSwapChain::createSwapChain()
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = nullptr; // optional
     createInfo.flags = 0; // optional
-    createInfo.surface = surface.getVkSurfaceKHR();
+    createInfo.surface = agDevice.getSurface();
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -58,7 +71,8 @@ void AgSwapChain::createSwapChain()
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    PhysicalDevice::QueueFamilyIndices indices = physicalDevice.getQueueFamilyIndices();
+    // TODO : doesn't seems to need to reask at each swapRecreation
+    AgDevice::QueueFamilyIndices indices = agDevice.findQueueFamilies(agDevice.getPhysicalDevice());
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily)
@@ -79,15 +93,15 @@ void AgSwapChain::createSwapChain()
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
-    if (vkCreateSwapchainKHR(logicalDevice.getVkDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+    if (vkCreateSwapchainKHR(agDevice.getDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
         throw std::runtime_error("failed to create swap chain!");
 
     // retreive swap chain images
-    vkGetSwapchainImagesKHR(logicalDevice.getVkDevice(), swapChain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(agDevice.getDevice(), swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(logicalDevice.getVkDevice(), swapChain, &imageCount, swapChainImages.data());
+    vkGetSwapchainImagesKHR(agDevice.getDevice(), swapChain, &imageCount, swapChainImages.data());
 
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
@@ -116,7 +130,7 @@ void AgSwapChain::createImageViews()
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(logicalDevice.getVkDevice(), &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
+		if (vkCreateImageView(agDevice.getDevice(), &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
 			throw std::runtime_error("failed to create image views!");
 	}
 }
@@ -170,7 +184,7 @@ void AgSwapChain::createRenderPass()
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(logicalDevice.getVkDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(agDevice.getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
 		throw std::runtime_error("failed to create render pass!");
 }
 
@@ -191,7 +205,7 @@ void AgSwapChain::createFrameBuffers()
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(logicalDevice.getVkDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
+        if (vkCreateFramebuffer(agDevice.getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
             throw std::runtime_error("failed to create framebuffer!");
     }
 }
@@ -225,7 +239,7 @@ VkExtent2D AgSwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabil
     }
     else
     {
-        VkExtent2D actualExtent = window.getExtent();
+        VkExtent2D actualExtent = windowExtent;
         actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
         return actualExtent;

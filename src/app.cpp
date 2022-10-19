@@ -6,15 +6,15 @@
 
 App::App()
 {
-	createSwapChain();
-	createPipeline();
+	agSwapChain = std::make_unique<AgSwapChain>(agDevice, window.getExtent());
+	agPipeline = std::make_unique<AgPipeline>(agDevice, agSwapChain->getExtent(), agSwapChain->getRenderPass(), "shaders/vert.spv", "shaders/frag.spv");
 }
 
 App::~App() {}
 
 void App::run()
 {
-	std::srand(static_cast <unsigned> (std::time(0))); // use current time as seed for random generator
+	//std::srand(static_cast <unsigned> (std::time(0))); // use current time as seed for random generator
 
 	vertexBuffer.subData(vertices);
 
@@ -27,7 +27,7 @@ void App::run()
 		
 		glfwPollEvents();
 	}
-	vkDeviceWaitIdle(logicalDevice.getVkDevice());
+	vkDeviceWaitIdle(agDevice.getDevice());
 }
 
 glm::vec3 App::getRandomColor()
@@ -47,27 +47,17 @@ void App::processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	prevSpace = space;
-	space = (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
+	//prevSpace = space;
+	//space = (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
 
 
-	if (space && !prevSpace)
-	{
-		std::cout << sierpinskiIterations;
-		sierpinskiIterations++;
-		std::vector<Vertex> vertices = generateSierpinskiTriangleVertex(sierpinskiIterations, up, left, right);
-		vertexBuffer.subData(vertices);
-	}
-}
-
-void App::createSwapChain()
-{
-
-}
-
-void App::createPipeline()
-{
-
+	//if (space && !prevSpace)
+	//{
+	//	std::cout << sierpinskiIterations;
+	//	sierpinskiIterations++;
+	//	std::vector<Vertex> vertices = generateSierpinskiTriangleVertex(sierpinskiIterations, up, left, right);
+	//	vertexBuffer.subData(vertices);
+	//}
 }
 
 void App::drawFrame()
@@ -78,31 +68,27 @@ void App::drawFrame()
 	std::vector<VkSemaphore> renderFinishedSemaphores = syncObjects.getRenderFinishedSemaphores();
 	std::vector<VkFence> inFlightFences = syncObjects.getVkFences();
 
-	vkWaitForFences(logicalDevice.getVkDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(logicalDevice.getVkDevice(), 1, &inFlightFences[currentFrame]);
+	vkWaitForFences(agDevice.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(logicalDevice.getVkDevice(), agSwapChain.getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(agDevice.getDevice(), agSwapChain->getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-	if (window.wasWindowResized())
-		std::cout << "okok";
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized())
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		window.resetWindowResizedFlag();
 		recreateSwapChain();
 		return;
 	}
-	else if (result != VK_SUCCESS)
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
 
 	// Only reset the fence if we are submitting work
-	vkResetFences(logicalDevice.getVkDevice(), 1, &inFlightFences[currentFrame]);
+	vkResetFences(agDevice.getDevice(), 1, &inFlightFences[currentFrame]);
 
 	vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-	commandBuffer.record(agSwapChain, pipeline, vertexBuffer, currentFrame, imageIndex);
+	commandBuffer.record(agSwapChain.get(), agPipeline.get(), vertexBuffer, currentFrame, imageIndex);
 
 	VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -122,10 +108,10 @@ void App::drawFrame()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(logicalDevice.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
+	if (vkQueueSubmit(agDevice.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
 		throw std::runtime_error("failed to submit draw command buffer!");
 
-	VkSwapchainKHR swapChains[] = { agSwapChain.getSwapChain() };
+	VkSwapchainKHR swapChains[] = { agSwapChain->getSwapChain() };
 
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -135,9 +121,9 @@ void App::drawFrame()
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
-	presentInfo.pResults = nullptr; // Optional
+	presentInfo.pResults = nullptr; // optional
 
-	result = vkQueuePresentKHR(logicalDevice.getPresentQueue(), &presentInfo);
+	result = vkQueuePresentKHR(agDevice.getPresentQueue(), &presentInfo);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized())
 	{
@@ -149,7 +135,7 @@ void App::drawFrame()
 		throw std::runtime_error("failed to present swap chain image!");
 	}
 
-	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	currentFrame = (currentFrame + 1) % agDevice.MAX_FRAMES_IN_FLIGHT;
 }
 
 void App::recreateSwapChain()
@@ -161,8 +147,13 @@ void App::recreateSwapChain()
 		glfwWaitEvents();
 	}
 
-	vkDeviceWaitIdle(logicalDevice.getVkDevice());
+	vkDeviceWaitIdle(agDevice.getDevice());
 
+	agSwapChain = nullptr;
+	agPipeline = nullptr;
+
+	agSwapChain = std::make_unique<AgSwapChain>(agDevice, window.getExtent(), std::move(agSwapChain));
+	agPipeline = std::make_unique<AgPipeline>(agDevice, agSwapChain->getExtent(), agSwapChain->getRenderPass(), "shaders/vert.spv", "shaders/frag.spv");
 }
 
 std::vector<Vertex> App::generateSierpinskiTriangleVertex(int n, Vertex up, Vertex left, Vertex right)

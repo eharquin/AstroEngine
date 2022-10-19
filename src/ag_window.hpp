@@ -7,15 +7,15 @@
 // std
 #include <string>
 
-class Window
+class AgWindow
 {
 public:
-	Window(int w, int h, std::string name);
-	~Window();
+	AgWindow(int w, int h, std::string name);
+	~AgWindow();
 
 	// not copyable
-	Window(const Window&) = delete;
-	Window& operator=(const Window&) = delete;
+	AgWindow(const AgWindow&) = delete;
+	AgWindow& operator=(const AgWindow&) = delete;
 
 	bool shouldClose() { return glfwWindowShouldClose(window); }
 	VkExtent2D getExtent() { return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) }; }

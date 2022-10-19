@@ -1,13 +1,15 @@
+// astro
 #include "ag_pipeline.hpp"
+#include "vertex.hpp"
 
 // std
 #include <stdexcept>
+#include <iostream>
+#include <fstream>
 
-#include "shader.hpp"
-#include "vertex.hpp"
 
-AgPipeline::AgPipeline(LogicalDevice& logicalDevice, AgSwapChain& agSwapChain, const std::string& vertexFilepath, const std::string& fragmentFilepath)
-	: logicalDevice(logicalDevice), agSwapChain(agSwapChain)
+AgPipeline::AgPipeline(AgDevice& agDevice, VkExtent2D extent, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
+	: agDevice(agDevice), extent(extent), renderPass(renderPass)
 {
 	createPipelineLayout();
 	createGraphicsPipeline(vertexFilepath, fragmentFilepath);
@@ -15,8 +17,9 @@ AgPipeline::AgPipeline(LogicalDevice& logicalDevice, AgSwapChain& agSwapChain, c
 
 AgPipeline::~AgPipeline()
 {
-	vkDestroyPipeline(logicalDevice.getVkDevice(), pipeline, nullptr);
-	vkDestroyPipelineLayout(logicalDevice.getVkDevice(), pipelineLayout, nullptr);
+	std::cout << "Destroy pipeline" << std::endl;
+	vkDestroyPipeline(agDevice.getDevice(), pipeline, nullptr);
+	vkDestroyPipelineLayout(agDevice.getDevice(), pipelineLayout, nullptr);
 }
 
 void AgPipeline::createPipelineLayout()
@@ -30,21 +33,25 @@ void AgPipeline::createPipelineLayout()
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
 
-	if (vkCreatePipelineLayout(logicalDevice.getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	if (vkCreatePipelineLayout(agDevice.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create pipeline layout!");
 }
 
 void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath)
 {
-	Shader vertexShader { logicalDevice, vertexFilepath };
-	Shader fragmentShader{ logicalDevice, fragmentFilepath };
+
+	std::vector<char> vertexShaderCode = readFile(vertexFilepath);
+	VkShaderModule vertexShader  = createShaderModule(vertexShaderCode);
+
+	std::vector<char> fragmentShaderCode = readFile(fragmentFilepath);
+	VkShaderModule fragmentShader = createShaderModule(fragmentShaderCode);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageInfo.pNext = nullptr; // optional
 	vertShaderStageInfo.flags = 0; // optional
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertexShader.getVkShaderModule();
+	vertShaderStageInfo.module = vertexShader;
 	vertShaderStageInfo.pName = "main";
 	vertShaderStageInfo.pSpecializationInfo = nullptr; // optional
 
@@ -53,7 +60,7 @@ void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const
 	vertShaderStageInfo.pNext = nullptr; // optional
 	vertShaderStageInfo.flags = 0; // optional
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragmentShader.getVkShaderModule();
+	fragShaderStageInfo.module = fragmentShader;
 	fragShaderStageInfo.pName = "main";
 	vertShaderStageInfo.pSpecializationInfo = nullptr; // optional
 
@@ -86,8 +93,6 @@ void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const
 	inputAssembly.flags = 0; // optional
 	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-	VkExtent2D extent = agSwapChain.getExtent();
 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
@@ -176,13 +181,55 @@ void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = agSwapChain.getRenderPass();
+	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // optional
 	pipelineInfo.basePipelineIndex = -1; // optional
 
-	if (vkCreateGraphicsPipelines(logicalDevice.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
+	if (vkCreateGraphicsPipelines(agDevice.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS)
 		throw std::runtime_error("failed to create graphics pipeline!");
 	
-	// shader are delete here
+	// shader are deleted here
+	vkDestroyShaderModule(agDevice.getDevice(), vertexShader, nullptr);
+	vkDestroyShaderModule(agDevice.getDevice(), fragmentShader, nullptr);
+}
+
+
+std::vector<char> AgPipeline::readFile(const std::string& filePath)
+{
+	// construct an ifstream object and open a file with the cursor at the end (ate) and in binary reader mode
+	std::ifstream file{ filePath, std::ios::ate | std::ios::binary };
+
+	if (!file.is_open())
+		throw std::runtime_error{ "failed to open file: " + filePath };
+
+	// get file size by using the cursor at the end
+	size_t fileSize = static_cast<size_t>(file.tellg());
+
+	std::vector<char> buffer(fileSize);
+
+	// seek back the cursor to the beginning
+	file.seekg(0);
+
+	file.read(buffer.data(), fileSize);
+	file.close();
+
+	return buffer;
+}
+
+VkShaderModule AgPipeline::createShaderModule(const std::vector<char>& code)
+{
+	VkShaderModule shader;
+
+	VkShaderModuleCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	createInfo.pNext = nullptr; // optional
+	createInfo.flags = 0; // optional
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	if (vkCreateShaderModule(agDevice.getDevice(), &createInfo, nullptr, &shader) != VK_SUCCESS)
+		throw std::runtime_error("failed to create shader module!");
+
+	return shader;
 }
