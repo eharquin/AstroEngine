@@ -1,10 +1,11 @@
 #pragma once
-#include "logical_device.hpp"
+// astro
+#include "ag_device.hpp"
 
 class SyncObjects
 {
 public:
-	SyncObjects(LogicalDevice& logicalDevice);
+	SyncObjects(AgDevice& agDevice);
 	~SyncObjects();
 
 	std::vector<VkSemaphore> getImageAvailableSemaphores() { return imageAvailableSemaphores; }
@@ -16,7 +17,8 @@ private:
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 
-	LogicalDevice& logicalDevice;
+	// asto ref
+	AgDevice& agDevice;
 
 	void createSyncObjects();
 };

@@ -1,10 +1,12 @@
+// astro
 #include "vertex_buffer.hpp"
 
 // std
 #include <vector>
+#include <stdexcept>
 
-VertexBuffer::VertexBuffer(PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice, size_t size)
-    : physicalDevice(physicalDevice), logicalDevice(logicalDevice), size(size)
+VertexBuffer::VertexBuffer(AgDevice& agDevice, size_t size)
+    : agDevice(agDevice), size(size)
 {
     assert(size >= 3 && "vextex size should store at least 3 vertex");
 	createVertexBuffer(size);
@@ -12,16 +14,17 @@ VertexBuffer::VertexBuffer(PhysicalDevice& physicalDevice, LogicalDevice& logica
 
 VertexBuffer::~VertexBuffer()
 {
-    vkDestroyBuffer(logicalDevice.getVkDevice(), vertexBuffer, nullptr);
-    vkFreeMemory(logicalDevice.getVkDevice(), vertexBufferMemory, nullptr);
+    vkDestroyBuffer(agDevice.getDevice(), vertexBuffer, nullptr);
+    vkFreeMemory(agDevice.getDevice(), vertexBufferMemory, nullptr);
 }
 
 void VertexBuffer::subData(const std::vector<Vertex>& vertices)
 {
+    // TODO : check data size
     void* data;
-    vkMapMemory(logicalDevice.getVkDevice(), vertexBufferMemory, 0, size, 0, &data);
+    vkMapMemory(agDevice.getDevice(), vertexBufferMemory, 0, size, 0, &data);
     memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());
-    vkUnmapMemory(logicalDevice.getVkDevice(), vertexBufferMemory);
+    vkUnmapMemory(agDevice.getDevice(), vertexBufferMemory);
 }
 
 void VertexBuffer::bind(VkCommandBuffer commandBuffer)
@@ -45,12 +48,12 @@ void VertexBuffer::createVertexBuffer(size_t size)
     bufferInfo.queueFamilyIndexCount = 0; // optional
     bufferInfo.pQueueFamilyIndices = nullptr; // optional
 
-    if (vkCreateBuffer(logicalDevice.getVkDevice(), &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
+    if (vkCreateBuffer(agDevice.getDevice(), &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
         throw std::runtime_error("failed to create vertex buffer!");
 
     // get memory requirements
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(logicalDevice.getVkDevice(), vertexBuffer, &memRequirements);
+    vkGetBufferMemoryRequirements(agDevice.getDevice(), vertexBuffer, &memRequirements);
 
     // allocate memory
     VkMemoryAllocateInfo allocInfo{};
@@ -59,17 +62,17 @@ void VertexBuffer::createVertexBuffer(size_t size)
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    if (vkAllocateMemory(logicalDevice.getVkDevice(), &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
+    if (vkAllocateMemory(agDevice.getDevice(), &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
         throw std::runtime_error("failed to allocate vertex buffer memory!");
 
     // bind memory to the buffer
-    vkBindBufferMemory(logicalDevice.getVkDevice(), vertexBuffer, vertexBufferMemory, 0);
+    vkBindBufferMemory(agDevice.getDevice(), vertexBuffer, vertexBufferMemory, 0);
 }
 
 uint32_t VertexBuffer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice.getVkPhysicalDevice(), &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(agDevice.getPhysicalDevice(), &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
     {

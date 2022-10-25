@@ -19,43 +19,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ag_device.cpp" />
     <ClCompile Include="src\ag_swap_chain.cpp" />
     <ClCompile Include="src\app.cpp" />
-    <ClCompile Include="src\command_buffer.cpp" />
-    <ClCompile Include="src\command_pool.cpp" />
+    <ClCompile Include="src\ag_command_buffer.cpp" />
     <ClCompile Include="src\ag_instance.cpp" />
-    <ClCompile Include="src\logical_device.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\physical_device.cpp" />
     <ClCompile Include="src\ag_pipeline.cpp" />
-    <ClCompile Include="src\shader.cpp" />
     <ClCompile Include="src\sync_objects.cpp" />
-    <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\vertex.cpp" />
     <ClCompile Include="src\vertex_buffer.cpp" />
-    <ClCompile Include="src\window.cpp" />
-    <ClCompile Include="src\surface.cpp" />
+    <ClCompile Include="src\ag_window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ag_command_buffer.hpp" />
+    <ClInclude Include="src\ag_device.hpp" />
     <ClInclude Include="src\ag_swap_chain.hpp" />
     <ClInclude Include="src\app.hpp" />
-    <ClInclude Include="src\command_buffer.hpp" />
-    <ClInclude Include="src\command_pool.hpp" />
     <ClInclude Include="src\ag_instance.hpp" />
-    <ClInclude Include="src\logical_device.hpp" />
-    <ClInclude Include="src\physical_device.hpp" />
     <ClInclude Include="src\ag_pipeline.hpp" />
-    <ClInclude Include="src\shader.hpp" />
     <ClInclude Include="src\sync_objects.hpp" />
-    <ClInclude Include="src\utils.hpp" />
     <ClInclude Include="src\vertex.hpp" />
     <ClInclude Include="src\vertex_buffer.hpp" />
-    <ClInclude Include="src\window.hpp" />
-    <ClInclude Include="src\surface.hpp" />
+    <ClInclude Include="src\ag_window.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

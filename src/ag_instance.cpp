@@ -1,5 +1,4 @@
 #include "ag_instance.hpp"
-#include "utils.hpp"
 
 // libs
 #include <GLFW/glfw3.h>
@@ -59,7 +58,7 @@ void AgInstance::createInstance()
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers)
     {
-        Utils::populateDebugMessengerCreateInfo(debugCreateInfo);
+        populateDebugMessengerCreateInfo(debugCreateInfo);
     }
 
     // define instance creation info 
@@ -107,7 +106,7 @@ void AgInstance::createInstance()
 void AgInstance::setupDebugMessenger()
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    Utils::populateDebugMessengerCreateInfo(createInfo);
+    populateDebugMessengerCreateInfo(createInfo);
 
     if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
         throw std::runtime_error("failed to set up debug messenger!");
@@ -162,4 +161,16 @@ bool AgInstance::checkValidationLayerSupport()
     }
 
     return true;
+}
+
+void AgInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+{
+    createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.pNext = nullptr; // optional
+    createInfo.flags = 0; // optional
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+    createInfo.pUserData = nullptr; // optional
 }

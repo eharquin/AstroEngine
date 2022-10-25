@@ -1,6 +1,5 @@
 // astro
 #include "ag_swap_chain.hpp"
-#include "utils.hpp"
 
 // libs
 
@@ -8,35 +7,58 @@
 #include <algorithm>
 
 
-AgSwapChain::AgSwapChain(Window& window, Surface& surface, PhysicalDevice& physicalDevice, LogicalDevice& logicalDevice)
-    : window(window), surface(surface), physicalDevice(physicalDevice), logicalDevice(logicalDevice)
+AgSwapChain::AgSwapChain(AgDevice& agDevice, VkExtent2D windowExtent)
+    : agDevice(agDevice), windowExtent(windowExtent)
 {
-	createSwapChain();
-	createImageViews();
-	createRenderPass();
-	createFrameBuffers();
+    init();
+}
+
+AgSwapChain::AgSwapChain(AgDevice& agDevice, VkExtent2D windowExtent, VkSwapchainKHR oldSwapChain)
+    : agDevice(agDevice), windowExtent(windowExtent), oldSwapChain{oldSwapChain}
+{
+    init();
+    oldSwapChain = VK_NULL_HANDLE;
+}
+
+void AgSwapChain::init()
+{
+    createSwapChain();
+    createImageViews();
+    createRenderPass();
+    createFrameBuffers();
+    createSyncObjects();
 }
 
 AgSwapChain::~AgSwapChain()
 {
+    std::cout << "Destroy swap chain" << std::endl;
+
+    // destroy sync objects
+    for (size_t i = 0; i < agDevice.MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(agDevice.getDevice(), imageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(agDevice.getDevice(), renderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(agDevice.getDevice(), inFlightFences[i], nullptr);
+    }
+
 	// destroy framebuffers
 	for (auto framebuffer : swapChainFramebuffers)
-		vkDestroyFramebuffer(logicalDevice.getVkDevice(), framebuffer, nullptr);
+		vkDestroyFramebuffer(agDevice.getDevice(), framebuffer, nullptr);
 
 	// destroy render pass
-	vkDestroyRenderPass(logicalDevice.getVkDevice(), renderPass, nullptr);
+	vkDestroyRenderPass(agDevice.getDevice(), renderPass, nullptr);
 
 	// destroy image views
 	for (auto imageView : swapChainImageViews)
-		vkDestroyImageView(logicalDevice.getVkDevice(), imageView, nullptr);
+		vkDestroyImageView(agDevice.getDevice(), imageView, nullptr);
 
 	// destroy swapChain
-	vkDestroySwapchainKHR(logicalDevice.getVkDevice(), swapChain, nullptr);
+	vkDestroySwapchainKHR(agDevice.getDevice(), swapChain, nullptr);
 }
 
 void AgSwapChain::createSwapChain()
 {
-    PhysicalDevice::SwapChainSupportDetails swapChainSupport = physicalDevice.getSwapChainSupportDetails();
+    // TODO : need to ask at each swapChain recreation? yess
+    AgDevice::SwapChainSupportDetails swapChainSupport = agDevice.querySwapChainSupport(agDevice.getPhysicalDevice());
 
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -50,7 +72,7 @@ void AgSwapChain::createSwapChain()
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = nullptr; // optional
     createInfo.flags = 0; // optional
-    createInfo.surface = surface.getVkSurfaceKHR();
+    createInfo.surface = agDevice.getSurface();
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -58,7 +80,8 @@ void AgSwapChain::createSwapChain()
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    PhysicalDevice::QueueFamilyIndices indices = physicalDevice.getQueueFamilyIndices();
+    // TODO : doesn't seems to need to reask at each swapRecreation
+    AgDevice::QueueFamilyIndices indices = agDevice.findQueueFamilies(agDevice.getPhysicalDevice());
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily)
@@ -79,15 +102,15 @@ void AgSwapChain::createSwapChain()
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = oldSwapChain;
 
-    if (vkCreateSwapchainKHR(logicalDevice.getVkDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+    if (vkCreateSwapchainKHR(agDevice.getDevice(), &createInfo, nullptr, &swapChain) != VK_SUCCESS)
         throw std::runtime_error("failed to create swap chain!");
 
     // retreive swap chain images
-    vkGetSwapchainImagesKHR(logicalDevice.getVkDevice(), swapChain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(agDevice.getDevice(), swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(logicalDevice.getVkDevice(), swapChain, &imageCount, swapChainImages.data());
+    vkGetSwapchainImagesKHR(agDevice.getDevice(), swapChain, &imageCount, swapChainImages.data());
 
     swapChainImageFormat = surfaceFormat.format;
     swapChainExtent = extent;
@@ -101,8 +124,8 @@ void AgSwapChain::createImageViews()
 	{
 		VkImageViewCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
+		createInfo.pNext = nullptr; // optional
+		createInfo.flags = 0; // optional
 		createInfo.image = swapChainImages[i];
 		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		createInfo.format = swapChainImageFormat;
@@ -116,7 +139,7 @@ void AgSwapChain::createImageViews()
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(logicalDevice.getVkDevice(), &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
+		if (vkCreateImageView(agDevice.getDevice(), &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
 			throw std::runtime_error("failed to create image views!");
 	}
 }
@@ -170,7 +193,7 @@ void AgSwapChain::createRenderPass()
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	if (vkCreateRenderPass(logicalDevice.getVkDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+	if (vkCreateRenderPass(agDevice.getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
 		throw std::runtime_error("failed to create render pass!");
 }
 
@@ -184,6 +207,8 @@ void AgSwapChain::createFrameBuffers()
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.pNext = nullptr; // optional
+        framebufferInfo.flags = 0; // optional
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.pAttachments = attachments;
@@ -191,7 +216,7 @@ void AgSwapChain::createFrameBuffers()
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(logicalDevice.getVkDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
+        if (vkCreateFramebuffer(agDevice.getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
             throw std::runtime_error("failed to create framebuffer!");
     }
 }
@@ -214,20 +239,93 @@ VkPresentModeKHR AgSwapChain::chooseSwapPresentMode(const std::vector<VkPresentM
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
             return availablePresentMode;
     }
+
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 VkExtent2D AgSwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-    {
         return capabilities.currentExtent;
-    }
-    else
+
+    VkExtent2D actualExtent = windowExtent;
+    actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+    actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    
+    return actualExtent;
+}
+
+VkResult AgSwapChain::aquireNextImage(uint32_t* imageIndex)
+{
+    vkWaitForFences(agDevice.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+    VkResult result = vkAcquireNextImageKHR(agDevice.getDevice(), swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, imageIndex);
+
+    return result;
+}
+
+VkResult AgSwapChain::submitCommandBuffers(std::vector<VkCommandBuffer> commandBuffers, uint32_t* imageIndex)
+{
+    // Only reset the fence if we are submitting work
+    vkResetFences(agDevice.getDevice(), 1, &inFlightFences[currentFrame]);
+
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = nullptr; // optional
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(agDevice.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer!");
+
+    VkSwapchainKHR swapChains[] = { swapChain };
+
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.pNext = nullptr; // optional
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = imageIndex;
+    presentInfo.pResults = nullptr; // optional
+
+    VkResult result = vkQueuePresentKHR(agDevice.getPresentQueue(), &presentInfo);
+
+    currentFrame = (currentFrame + 1) % agDevice.MAX_FRAMES_IN_FLIGHT;
+
+    return result;
+}
+
+void AgSwapChain::createSyncObjects()
+{
+    imageAvailableSemaphores.resize(agDevice.MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(agDevice.MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(agDevice.MAX_FRAMES_IN_FLIGHT);
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < agDevice.MAX_FRAMES_IN_FLIGHT; i++)
     {
-        VkExtent2D actualExtent = window.getExtent();
-        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-        return actualExtent;
+        if (vkCreateSemaphore(agDevice.getDevice(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(agDevice.getDevice(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+            vkCreateFence(agDevice.getDevice(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create semaphores!");
+        }
     }
 }

@@ -1,6 +1,5 @@
 #pragma once
 // astro
-#include "logical_device.hpp"
 #include "ag_swap_chain.hpp"
 
 // std
@@ -10,20 +9,22 @@
 class AgPipeline
 {
 public:
-	AgPipeline(LogicalDevice& logicalDevice, AgSwapChain& AgSwapChain, const std::string& vertexFilepath, const std::string& fragmentFilepath);
+	AgPipeline(AgDevice& agDevice, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath);
 	~AgPipeline();
 
 	VkPipeline getVkPipeline() { return pipeline; }
 
-
 private:
+	VkRenderPass renderPass;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 	
 	// astro ref
-	LogicalDevice& logicalDevice;
-	AgSwapChain& agSwapChain;
+	AgDevice& agDevice;
 
 	void createPipelineLayout();
 	void createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath);
+
+	static std::vector<char> readFile(const std::string& filePath);
+	VkShaderModule createShaderModule(const std::vector<char>& code);
 };
