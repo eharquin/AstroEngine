@@ -38,6 +38,10 @@ void AgDevice::pickPhysicalDevice()
 
 	for (const auto& device : devices)
 	{
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties(device, &properties);
+		std::cout << properties.deviceName << std::endl;
+
 		int score = rateDeviceSuitability(device);
 		candidates.insert(std::make_pair(score, device));
 	}
@@ -147,6 +151,12 @@ AgDevice::SwapChainSupportDetails AgDevice::querySwapChainSupport(VkPhysicalDevi
 {
 	SwapChainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+
+	std::cout << "minImageCount" << details.capabilities.minImageCount << std::endl;
+	std::cout << "maxImageCount" << details.capabilities.maxImageCount << std::endl;
+	std::cout << "minImageExtent" << details.capabilities.minImageExtent.width << " " << details.capabilities.minImageExtent.height << std::endl;
+	std::cout << "maxImageExtent" << details.capabilities.maxImageExtent.width << " " << details.capabilities.minImageExtent.height << std::endl;
 
 	uint32_t formatCount;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);

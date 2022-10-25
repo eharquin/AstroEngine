@@ -8,8 +8,8 @@
 #include <fstream>
 
 
-AgPipeline::AgPipeline(AgDevice& agDevice, VkExtent2D extent, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
-	: agDevice(agDevice), extent(extent), renderPass(renderPass)
+AgPipeline::AgPipeline(AgDevice& agDevice, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
+	: agDevice(agDevice), renderPass(renderPass)
 {
 	createPipelineLayout();
 	createGraphicsPipeline(vertexFilepath, fragmentFilepath);
@@ -94,26 +94,26 @@ void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const
 	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = (float)extent.width;
-	viewport.height = (float)extent.height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	//VkViewport viewport{};
+	//viewport.x = 0.0f;
+	//viewport.y = 0.0f;
+	//viewport.width = (float)extent.width;
+	//viewport.height = (float)extent.height;
+	//viewport.minDepth = 0.0f;
+	//viewport.maxDepth = 1.0f;
 
-	VkRect2D scissor{};
-	scissor.offset = { 0, 0 };
-	scissor.extent = extent;
+	//VkRect2D scissor{};
+	//scissor.offset = { 0, 0 };
+	//scissor.extent = extent;
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.pNext = nullptr; // optional
 	viewportState.flags = 0; // optional
-	viewportState.viewportCount = 1;
-	viewportState.pViewports = &viewport;
-	viewportState.scissorCount = 1;
-	viewportState.pScissors = &scissor;
+	viewportState.viewportCount = 0;
+	viewportState.pViewports = nullptr;
+	viewportState.scissorCount = 0;
+	viewportState.pScissors = nullptr;
 
 
 	VkPipelineRasterizationStateCreateInfo rasterizer{};

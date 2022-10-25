@@ -7,7 +7,8 @@
 App::App()
 {
 	agSwapChain = std::make_unique<AgSwapChain>(agDevice, window.getExtent());
-	agPipeline = std::make_unique<AgPipeline>(agDevice, agSwapChain->getExtent(), agSwapChain->getRenderPass(), "shaders/vert.spv", "shaders/frag.spv");
+	agPipeline = std::make_unique<AgPipeline>(agDevice, agSwapChain->getRenderPass(), "shaders/vert.spv", "shaders/frag.spv");
+	agCommandBuffer = std::make_unique<AgCommandBuffer>(agDevice, agSwapChain->getImageCount());
 }
 
 App::~App() {}
@@ -16,16 +17,19 @@ void App::run()
 {
 	//std::srand(static_cast <unsigned> (std::time(0))); // use current time as seed for random generator
 
+	std::vector<Vertex> vertices = generateSierpinskiTriangleVertex(sierpinskiIterations, up, left, right);
+
 	vertexBuffer.subData(vertices);
 
 	while (!window.shouldClose())
 	{
 		// input
 		// -----
+		glfwPollEvents();
+
 		processInput(window.getGLFWWindow());
 		drawFrame();
 		
-		glfwPollEvents();
 	}
 	vkDeviceWaitIdle(agDevice.getDevice());
 }
@@ -47,33 +51,25 @@ void App::processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	//prevSpace = space;
-	//space = (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
+	prevSpace = space;
+	space = (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
 
 
-	//if (space && !prevSpace)
-	//{
-	//	std::cout << sierpinskiIterations;
-	//	sierpinskiIterations++;
-	//	std::vector<Vertex> vertices = generateSierpinskiTriangleVertex(sierpinskiIterations, up, left, right);
-	//	vertexBuffer.subData(vertices);
-	//}
+	if (space && !prevSpace)
+	{
+		sierpinskiIterations++;
+		std::vector<Vertex> vertices = generateSierpinskiTriangleVertex(sierpinskiIterations, up, left, right);
+		std::cout << vertices.size() << std::endl;
+		vertexBuffer.subData(vertices);
+	}
 }
 
 void App::drawFrame()
 {
-	std::vector<VkCommandBuffer> commandBuffers = commandBuffer.getVkCommandBuffers();
-
-	std::vector<VkSemaphore> imageAvailableSemaphores = syncObjects.getImageAvailableSemaphores();
-	std::vector<VkSemaphore> renderFinishedSemaphores = syncObjects.getRenderFinishedSemaphores();
-	std::vector<VkFence> inFlightFences = syncObjects.getVkFences();
-
-	vkWaitForFences(agDevice.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(agDevice.getDevice(), agSwapChain->getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-
+	VkResult result = agSwapChain->aquireNextImage(&imageIndex);
+	
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		recreateSwapChain();
@@ -84,47 +80,11 @@ void App::drawFrame()
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
 
-	// Only reset the fence if we are submitting work
-	vkResetFences(agDevice.getDevice(), 1, &inFlightFences[currentFrame]);
+	agCommandBuffer->record(agSwapChain.get(), agPipeline.get(), vertexBuffer, agSwapChain->currentFrame, imageIndex);
+	
+	std::vector<VkCommandBuffer> commandBuffers = agCommandBuffer->getVkCommandBuffers();
 
-	vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-	commandBuffer.record(agSwapChain.get(), agPipeline.get(), vertexBuffer, currentFrame, imageIndex);
-
-	VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-
-	VkCommandBuffer commandBufferTemp = commandBuffers[currentFrame];
-
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.pNext = nullptr; // optional
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBufferTemp;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	if (vkQueueSubmit(agDevice.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
-		throw std::runtime_error("failed to submit draw command buffer!");
-
-	VkSwapchainKHR swapChains[] = { agSwapChain->getSwapChain() };
-
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.pNext = nullptr; // optional
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &imageIndex;
-	presentInfo.pResults = nullptr; // optional
-
-	result = vkQueuePresentKHR(agDevice.getPresentQueue(), &presentInfo);
-
+	result = agSwapChain->submitCommandBuffers(commandBuffers, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized())
 	{
 		window.resetWindowResizedFlag();
@@ -135,7 +95,6 @@ void App::drawFrame()
 		throw std::runtime_error("failed to present swap chain image!");
 	}
 
-	currentFrame = (currentFrame + 1) % agDevice.MAX_FRAMES_IN_FLIGHT;
 }
 
 void App::recreateSwapChain()
@@ -149,11 +108,14 @@ void App::recreateSwapChain()
 
 	vkDeviceWaitIdle(agDevice.getDevice());
 
-	agSwapChain = nullptr;
-	agPipeline = nullptr;
+	VkSwapchainKHR oldSwapChain = agSwapChain->getSwapChain();
+	//agSwapChain = nullptr;
+	//agPipeline = nullptr;
 
-	agSwapChain = std::make_unique<AgSwapChain>(agDevice, window.getExtent(), std::move(agSwapChain));
-	agPipeline = std::make_unique<AgPipeline>(agDevice, agSwapChain->getExtent(), agSwapChain->getRenderPass(), "shaders/vert.spv", "shaders/frag.spv");
+	agSwapChain = std::make_unique<AgSwapChain>(agDevice, window.getExtent(), oldSwapChain);
+
+	// TODO : recreate only if the render pass is no longer compatible
+	agPipeline = std::make_unique<AgPipeline>(agDevice, agSwapChain->getRenderPass(), "shaders/vert.spv", "shaders/frag.spv");
 }
 
 std::vector<Vertex> App::generateSierpinskiTriangleVertex(int n, Vertex up, Vertex left, Vertex right)
@@ -195,4 +157,6 @@ std::vector<Vertex> App::generateSierpinskiTriangleVertex(int n, Vertex up, Vert
 	Vertex rightRight = right;
 	auto rightVertices = generateSierpinskiTriangleVertex(n - 1, rightUp, rightLeft, rightRight);
 	vertices.insert(vertices.begin(), rightVertices.begin(), rightVertices.end());
+
+	return vertices;
 }

@@ -1,8 +1,8 @@
 #include "ag_command_buffer.hpp"
 #include <stdexcept>
 
-AgCommandBuffer::AgCommandBuffer(AgDevice& agDevice)
-	: agDevice(agDevice)
+AgCommandBuffer::AgCommandBuffer(AgDevice& agDevice, uint32_t imageCount)
+	: agDevice(agDevice), imageCount(imageCount)
 {
     createCommandPool();
 	createCommandBuffer();
@@ -13,32 +13,34 @@ AgCommandBuffer::~AgCommandBuffer()
     vkDestroyCommandPool(agDevice.getDevice(), commandPool, nullptr);
 }
 
-void AgCommandBuffer::record(AgSwapChain* agSwapChain, AgPipeline* agPipeline, VertexBuffer& vertexBuffer, uint32_t bufferIndex, uint32_t imageIndex)
+void AgCommandBuffer::record(AgSwapChain* agSwapChain, AgPipeline* agPipeline, VertexBuffer& vertexBuffer, uint32_t currentFrame, uint32_t imageIndex)
 {
-	VkCommandBufferBeginInfo beginInfo{};
+    //std::cout << "current frame : " << currentFrame << " " << "image index" << imageIndex << std::endl;
+	
+    VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.pNext = nullptr; // optional
 	beginInfo.flags = 0; // optional
 	beginInfo.pInheritanceInfo = nullptr; // optional
 
-	if (vkBeginCommandBuffer(commandBuffers[bufferIndex], &beginInfo) != VK_SUCCESS)
+	if (vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS)
 		throw std::runtime_error("failed to begin recording command buffer!");
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.pNext = nullptr;
+    renderPassInfo.pNext = nullptr; // optional
     renderPassInfo.renderPass = agSwapChain->getRenderPass();
     renderPassInfo.framebuffer = agSwapChain->getFramebuffer(imageIndex);
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = agSwapChain->getExtent();
 
-    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+    VkClearValue clearColor = { {{0.2f, 0.3f, 0.3f, 1.0f}} };
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
-    vkCmdBeginRenderPass(commandBuffers[bufferIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffers[currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffers[bufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, agPipeline->getVkPipeline());
+    vkCmdBindPipeline(commandBuffers[currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, agPipeline->getVkPipeline());
 
     VkExtent2D extent = agSwapChain->getExtent();
 
@@ -49,20 +51,20 @@ void AgCommandBuffer::record(AgSwapChain* agSwapChain, AgPipeline* agPipeline, V
     viewport.height = (float)extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffers[bufferIndex], 0, 1, &viewport);
+    vkCmdSetViewport(commandBuffers[currentFrame], 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
     scissor.extent = extent;
-    vkCmdSetScissor(commandBuffers[bufferIndex], 0, 1, &scissor);
+    vkCmdSetScissor(commandBuffers[currentFrame], 0, 1, &scissor);
 
-    vertexBuffer.bind(commandBuffers[bufferIndex]);
+    vertexBuffer.bind(commandBuffers[currentFrame]);
 
-    vkCmdDraw(commandBuffers[bufferIndex], static_cast<uint32_t>(vertexBuffer.getSize()), 1, 0, 0);
+    vkCmdDraw(commandBuffers[currentFrame], static_cast<uint32_t>(vertexBuffer.getSize()), 1, 0, 0);
 
-    vkCmdEndRenderPass(commandBuffers[bufferIndex]);
+    vkCmdEndRenderPass(commandBuffers[currentFrame]);
 
-    if (vkEndCommandBuffer(commandBuffers[bufferIndex]) != VK_SUCCESS)
+    if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS)
         throw std::runtime_error("failed to record command buffer!");
 }
 
@@ -82,7 +84,8 @@ void AgCommandBuffer::createCommandPool()
 
 void AgCommandBuffer::createCommandBuffer()
 {
-    commandBuffers.resize(3);
+    // resize to swapChain images size
+    commandBuffers.resize(agDevice.MAX_FRAMES_IN_FLIGHT);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

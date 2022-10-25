@@ -34,6 +34,9 @@ void AgWindow::initWindow()
 	window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+	glfwSetWindowPosCallback(window, windowPosCallback);
+	glfwSetWindowRefreshCallback(window, windowRefreshCallback);
+	glfwSetWindowSizeCallback(window, windowSizeCallback);
 }
 
 void AgWindow::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)
@@ -44,3 +47,17 @@ void AgWindow::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int 
 	window->height = height;
 }
 
+void AgWindow::windowPosCallback(GLFWwindow*, int xpos, int ypos)
+{
+	std::cout << "window pos callback" << std::endl;
+}
+
+void AgWindow::windowRefreshCallback(GLFWwindow*)
+{
+	std::cout << "window refresh callback" << std::endl;
+}
+
+void AgWindow::windowSizeCallback(GLFWwindow*, int width, int height)
+{
+	std::cout << "window size callback" << std::endl;
+}

@@ -34,6 +34,12 @@ private:
 	bool framebufferResized = false;
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	
+	static void windowPosCallback(GLFWwindow*, int xpos, int ypos);
+	static void windowRefreshCallback(GLFWwindow*);
+	static void windowSizeCallback(GLFWwindow*, int width, int height);
+
+
 
 	std::string windowName;
 	GLFWwindow* window;

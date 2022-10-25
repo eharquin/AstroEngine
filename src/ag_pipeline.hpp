@@ -9,13 +9,12 @@
 class AgPipeline
 {
 public:
-	AgPipeline(AgDevice& agDevice, VkExtent2D extent, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath);
+	AgPipeline(AgDevice& agDevice, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath);
 	~AgPipeline();
 
 	VkPipeline getVkPipeline() { return pipeline; }
 
 private:
-	VkExtent2D extent;
 	VkRenderPass renderPass;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;

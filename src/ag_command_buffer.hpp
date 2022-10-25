@@ -9,16 +9,17 @@
 class AgCommandBuffer
 {
 public:
-	AgCommandBuffer(AgDevice& agDevice);
+	AgCommandBuffer(AgDevice& agDevice, uint32_t imageCount);
 	~AgCommandBuffer();
 
-	void record(AgSwapChain* agSwapChain, AgPipeline* agPipeline, VertexBuffer& vertexBuffer, uint32_t bufferIndex, uint32_t imageIndex);
+	void record(AgSwapChain* agSwapChain, AgPipeline* agPipeline, VertexBuffer& vertexBuffer, uint32_t vertexIndex, uint32_t imageIndex);
 
 	std::vector<VkCommandBuffer> getVkCommandBuffers() { return commandBuffers; }
 
 private:
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
+	uint32_t imageCount;
 	
 	// astro ref
 	AgDevice& agDevice;

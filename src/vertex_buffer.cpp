@@ -20,6 +20,7 @@ VertexBuffer::~VertexBuffer()
 
 void VertexBuffer::subData(const std::vector<Vertex>& vertices)
 {
+    // TODO : check data size
     void* data;
     vkMapMemory(agDevice.getDevice(), vertexBufferMemory, 0, size, 0, &data);
     memcpy(data, vertices.data(), sizeof(Vertex) * vertices.size());

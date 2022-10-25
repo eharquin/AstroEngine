@@ -12,7 +12,7 @@
 	const bool enableValidationLayers = false;
 #else
 	const bool printInfo = true;
-	const bool enableValidationLayers = true;
+	const bool enableValidationLayers = false;
 #endif // DEBUG
 
 class AgInstance

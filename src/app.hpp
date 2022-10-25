@@ -7,7 +7,6 @@
 #include "ag_swap_chain.hpp"
 #include "ag_pipeline.hpp"
 #include "ag_command_buffer.hpp"
-#include "sync_objects.hpp"
 #include "vertex.hpp"
 #include "vertex_buffer.hpp"
 
@@ -25,7 +24,7 @@ public:
 	static constexpr int WIDTH = 1240;
 	static constexpr int HEIGHT = 720;
 
-	int sierpinskiIterations = 1;
+	int sierpinskiIterations = 2;
 
 	bool space = false;
 	bool prevSpace = false;
@@ -51,8 +50,7 @@ private:
 
 	VertexBuffer vertexBuffer{ agDevice, 1024 * 100 };
 	
-	AgCommandBuffer commandBuffer{ agDevice };
-	SyncObjects syncObjects{ agDevice };
+	std::unique_ptr<AgCommandBuffer> agCommandBuffer;
 
 	void drawFrame();
 
@@ -64,10 +62,10 @@ private:
 
 	void processInput(GLFWwindow* window);
 
-	const Vertex up = { {0.0f, -0.5f}, {1.0f, 0.0f, 0.0f} };
-	const Vertex left = { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f} };
-	const Vertex right = { {-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f} };
-	const std::vector<Vertex> vertices = { up, left, right };
+	const Vertex up = { {0.0f, -1.0f}, {1.0f, 0.0f, 0.0f} };
+	const Vertex left = { {1.0f, 1.0f}, {0.0f, 1.0f, 0.0f} };
+	const Vertex right = { {-1.0f, 1.0f}, {0.0f, 0.0f, 1.0f} };
+	//const std::vector<Vertex> vertices = { up, left, right };
 
 };
 
