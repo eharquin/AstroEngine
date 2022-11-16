@@ -12,10 +12,14 @@ AgDevice::AgDevice(AgWindow& agWindow, AgInstance& agInstance)
 	createSurface();
 	pickPhysicalDevice();
 	createDevice();
+	createCommandPools();
 }
 
 AgDevice::~AgDevice()
 {
+	vkDestroyCommandPool(device, graphicsCommandPool, nullptr);
+	vkDestroyCommandPool(device, transferCommandPool, nullptr);
+
 	vkDestroyDevice(device, nullptr);
 
 	vkDestroySurfaceKHR(agInstance.getInstance(), surface, nullptr);
@@ -38,9 +42,6 @@ void AgDevice::pickPhysicalDevice()
 
 	for (const auto& device : devices)
 	{
-		VkPhysicalDeviceProperties properties;
-		vkGetPhysicalDeviceProperties(device, &properties);
-		std::cout << properties.deviceName << std::endl;
 
 		int score = rateDeviceSuitability(device);
 		candidates.insert(std::make_pair(score, device));
@@ -51,6 +52,10 @@ void AgDevice::pickPhysicalDevice()
 		physicalDevice = candidates.rbegin()->second;
 	else
 		throw std::runtime_error("failed to find a suitable GPU!");
+
+	VkPhysicalDeviceProperties properties;
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	std::cout << properties.deviceName << properties.deviceID << std::endl;
 }
 
 bool AgDevice::checkDeviceExtensionSupport(VkPhysicalDevice device)
@@ -133,10 +138,13 @@ AgDevice::QueueFamilyIndices AgDevice::findQueueFamilies(VkPhysicalDevice device
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			indices.graphicsFamily = i;
 
+		else if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+			indices.transferFamily = i;
+
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-		if (presentSupport)
+		if (!indices.presentFamily.has_value() && presentSupport)
 			indices.presentFamily = i;
 
 		if (indices.isComplete())
@@ -152,11 +160,10 @@ AgDevice::SwapChainSupportDetails AgDevice::querySwapChainSupport(VkPhysicalDevi
 	SwapChainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
-
-	std::cout << "minImageCount" << details.capabilities.minImageCount << std::endl;
-	std::cout << "maxImageCount" << details.capabilities.maxImageCount << std::endl;
-	std::cout << "minImageExtent" << details.capabilities.minImageExtent.width << " " << details.capabilities.minImageExtent.height << std::endl;
-	std::cout << "maxImageExtent" << details.capabilities.maxImageExtent.width << " " << details.capabilities.minImageExtent.height << std::endl;
+	//std::cout << "minImageCount" << details.capabilities.minImageCount << std::endl;
+	//std::cout << "maxImageCount" << details.capabilities.maxImageCount << std::endl;
+	//std::cout << "minImageExtent" << details.capabilities.minImageExtent.width << " " << details.capabilities.minImageExtent.height << std::endl;
+	//std::cout << "maxImageExtent" << details.capabilities.maxImageExtent.width << " " << details.capabilities.minImageExtent.height << std::endl;
 
 	uint32_t formatCount;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
@@ -175,12 +182,25 @@ AgDevice::SwapChainSupportDetails AgDevice::querySwapChainSupport(VkPhysicalDevi
 	return details;
 }
 
+uint32_t AgDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	{
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			return i;
+	}
+	throw std::runtime_error("failed to find suitable memory type!");
+}
+
 void AgDevice::createDevice()
 {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -214,4 +234,104 @@ void AgDevice::createDevice()
 
 	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
+}
+
+void AgDevice::createCommandPools()
+{
+	AgDevice::QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+
+	// create graphics command pool
+	VkCommandPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.pNext = nullptr; // optional
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+	if (vkCreateCommandPool(device, &poolInfo, nullptr, &graphicsCommandPool) != VK_SUCCESS)
+		throw std::runtime_error("failed to create command pool!");
+
+
+	// create transfer command pool
+	poolInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
+
+	if (vkCreateCommandPool(device, &poolInfo, nullptr, &transferCommandPool) != VK_SUCCESS)
+		throw std::runtime_error("failed to create command pool!");
+}
+
+void AgDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+	// create buffer
+	AgDevice::QueueFamilyIndices queueFamilyindices = findQueueFamilies(physicalDevice);
+
+	uint32_t indices[] = { queueFamilyindices.graphicsFamily.value(), queueFamilyindices.transferFamily.value() };
+
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.pNext = nullptr; // optional
+	bufferInfo.flags = 0; // optional
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+	bufferInfo.queueFamilyIndexCount = 2;
+	bufferInfo.pQueueFamilyIndices = indices;
+
+	if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+		throw std::runtime_error("failed to create vertex buffer!");
+
+	// get memory requirements
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+	// allocate memory
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.pNext = nullptr; // optional
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+		throw std::runtime_error("failed to allocate vertex buffer memory!");
+
+	// bind memory to the buffer
+	vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
+void AgDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.pNext = nullptr; // optional
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = transferCommandPool;
+	allocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.pNext = nullptr; // optional
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.pInheritanceInfo = nullptr; // optional
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0; // Optional
+	copyRegion.dstOffset = 0; // Optional
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(transferQueue);
+
+	vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
 }

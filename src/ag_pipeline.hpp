@@ -9,21 +9,22 @@
 class AgPipeline
 {
 public:
-	AgPipeline(AgDevice& agDevice, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath);
+	AgPipeline(AgDevice& agDevice, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath);
 	~AgPipeline();
+
+	
 
 	VkPipeline getVkPipeline() { return pipeline; }
 
+	void bind(VkCommandBuffer commandBuffer);
+
 private:
-	VkRenderPass renderPass;
-	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 	
 	// astro ref
 	AgDevice& agDevice;
 
-	void createPipelineLayout();
-	void createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath);
+	void createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath);
 
 	static std::vector<char> readFile(const std::string& filePath);
 	VkShaderModule createShaderModule(const std::vector<char>& code);

@@ -1,43 +1,33 @@
 // astro
 #include "ag_pipeline.hpp"
-#include "vertex.hpp"
+#include "ag_model.hpp"
 
 // std
 #include <stdexcept>
 #include <iostream>
 #include <fstream>
+#include <array>
 
 
-AgPipeline::AgPipeline(AgDevice& agDevice, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
-	: agDevice(agDevice), renderPass(renderPass)
+
+AgPipeline::AgPipeline(AgDevice& agDevice, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
+	: agDevice(agDevice)
 {
-	createPipelineLayout();
-	createGraphicsPipeline(vertexFilepath, fragmentFilepath);
+	createGraphicsPipeline(pipelineLayout, renderPass, vertexFilepath, fragmentFilepath);
 }
 
 AgPipeline::~AgPipeline()
 {
 	std::cout << "Destroy pipeline" << std::endl;
 	vkDestroyPipeline(agDevice.getDevice(), pipeline, nullptr);
-	vkDestroyPipelineLayout(agDevice.getDevice(), pipelineLayout, nullptr);
 }
 
-void AgPipeline::createPipelineLayout()
+void AgPipeline::bind(VkCommandBuffer commandBuffer)
 {
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.pNext = nullptr; // optional
-	pipelineLayoutInfo.flags = 0; // optional
-	pipelineLayoutInfo.setLayoutCount = 0; // optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // optional
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // optional
-
-	if (vkCreatePipelineLayout(agDevice.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-		throw std::runtime_error("failed to create pipeline layout!");
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
-void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const std::string& fragmentFilepath)
+void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRenderPass renderPass, const std::string& vertexFilepath, const std::string& fragmentFilepath)
 {
 
 	std::vector<char> vertexShaderCode = readFile(vertexFilepath);
@@ -75,8 +65,8 @@ void AgPipeline::createGraphicsPipeline(const std::string& vertexFilepath, const
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 
-	auto bindingDescription = Vertex::getBindingDescription();
-	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+	auto bindingDescription = AgModel::Vertex::getBindingDescription();
+	auto attributeDescriptions = AgModel::Vertex::getAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

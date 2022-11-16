@@ -64,7 +64,7 @@ void AgSwapChain::createSwapChain()
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-    imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
         imageCount = swapChainSupport.capabilities.maxImageCount;
 
@@ -92,7 +92,6 @@ void AgSwapChain::createSwapChain()
     }
     else
     {
-        std::cout << "Exclusive" << std::endl;
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.queueFamilyIndexCount = 0; // Optional
         createInfo.pQueueFamilyIndices = nullptr; // Optional
@@ -118,7 +117,7 @@ void AgSwapChain::createSwapChain()
 
 void AgSwapChain::createImageViews()
 {
-	swapChainImageViews.resize(imageCount);
+	swapChainImageViews.resize(swapChainImages.size());
 
 	for (size_t i = 0; i < swapChainImageViews.size(); i++)
 	{
@@ -199,7 +198,7 @@ void AgSwapChain::createRenderPass()
 
 void AgSwapChain::createFrameBuffers()
 {
-    swapChainFramebuffers.resize(imageCount);
+    swapChainFramebuffers.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
     {

@@ -34,9 +34,12 @@ void AgWindow::initWindow()
 	window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+	
+	/*
 	glfwSetWindowPosCallback(window, windowPosCallback);
 	glfwSetWindowRefreshCallback(window, windowRefreshCallback);
 	glfwSetWindowSizeCallback(window, windowSizeCallback);
+	*/
 }
 
 void AgWindow::framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height)

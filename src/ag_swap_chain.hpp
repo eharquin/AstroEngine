@@ -23,7 +23,11 @@ public:
 	// swap chain
 	VkSwapchainKHR getSwapChain() { return swapChain; }
 	VkExtent2D getExtent() { return swapChainExtent; }
-	uint32_t getImageCount() { return imageCount; }
+	uint32_t getCurrentFrame() { return currentFrame; }
+	bool compareSwapFormat(const AgSwapChain& swapChain) const
+	{
+		return swapChain.swapChainImageFormat == swapChainImageFormat;
+	}
 
 	// render pass
 	VkRenderPass getRenderPass() { return renderPass; }
@@ -32,12 +36,10 @@ public:
 	VkFramebuffer getFramebuffer(int i) { return swapChainFramebuffers[i]; }
 
 	// execution
-	uint32_t currentFrame = 0;
 	VkResult aquireNextImage(uint32_t* imageIndex);
 	VkResult submitCommandBuffers(std::vector<VkCommandBuffer> commandBuffers, uint32_t* imageIndex);
 
 private:
-
 	// swap chain 
 	VkExtent2D windowExtent;
 	VkSwapchainKHR swapChain;
@@ -45,7 +47,7 @@ private:
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
-	uint32_t imageCount = 0;
+	uint32_t currentFrame = 0;
 	void createSwapChain();
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
