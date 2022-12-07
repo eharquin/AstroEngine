@@ -23,7 +23,7 @@ public:
 	AgDevice(AgWindow& agWindow, AgInstance& agInstance);
 	~AgDevice();
 
-	const int MAX_FRAMES_IN_FLIGHT = 2;
+	const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
 	// surface
 	VkSurfaceKHR getSurface() { return surface; }

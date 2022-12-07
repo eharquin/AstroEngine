@@ -318,8 +318,8 @@ void AgDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize s
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
 	VkBufferCopy copyRegion{};
-	copyRegion.srcOffset = 0; // Optional
-	copyRegion.dstOffset = 0; // Optional
+	copyRegion.srcOffset = 0; // optional
+	copyRegion.dstOffset = 0; // optional
 	copyRegion.size = size;
 	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 

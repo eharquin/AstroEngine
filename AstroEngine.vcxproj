@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ag_buffer.cpp" />
+    <ClCompile Include="src\ag_descriptors.cpp" />
     <ClCompile Include="src\ag_device.cpp" />
     <ClCompile Include="src\ag_model.cpp" />
     <ClCompile Include="src\ag_renderer.cpp" />
@@ -38,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ag_buffer.hpp" />
+    <ClInclude Include="src\ag_descriptors.hpp" />
     <ClInclude Include="src\ag_device.hpp" />
     <ClInclude Include="src\ag_game_object.hpp" />
     <ClInclude Include="src\ag_model.hpp" />

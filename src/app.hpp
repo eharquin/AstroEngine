@@ -6,6 +6,10 @@
 
 #include "ag_renderer.hpp"
 #include "simple_render_system.hpp"
+#include "ag_descriptors.hpp"
+
+
+
 #include "sierpinski_triangle_system.hpp"
 
 // libs
@@ -18,6 +22,13 @@
 class App
 {
 public:
+
+	struct UniformBufferObject {
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::mat4 proj;
+	};
+
 	static constexpr int WIDTH = 1240;
 	static constexpr int HEIGHT = 720;
 
@@ -36,9 +47,12 @@ private:
 	AgDevice agDevice{ agWindow, agInstance };
 
 	AgRenderer agRenderer{ agWindow, agDevice };
-	SimpleRenderSystem simpleRenderSystem{ agDevice, agRenderer.getRenderPass() };
 
 	std::vector<AgGameObject> gameObjects;
+
+	std::unique_ptr<AgDescriptorPool> globalPool;
+
+
 
 	AgGameObject createTriangleModel();
 

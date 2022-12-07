@@ -29,6 +29,7 @@ public:
 	// swapChain
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+	uint32_t getCurrentFrame() const { return agSwapChain->getCurrentFrame(); }
 
 	VkRenderPass getRenderPass() const { return agSwapChain->getRenderPass(); }
 	bool isFrameInProgress() const { return isFrameStarted; }

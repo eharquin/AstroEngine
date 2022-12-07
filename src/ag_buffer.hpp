@@ -20,6 +20,7 @@ public:
 
 	VkBuffer getBuffer() const { return buffer; }
 	VkDeviceSize getSize() const { return bufferSize; }
+	VkDescriptorBufferInfo getDescriptorBufferInfo() const { return VkDescriptorBufferInfo{ buffer, 0, VK_WHOLE_SIZE }; }
 
 private:
 	static VkDeviceSize getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);

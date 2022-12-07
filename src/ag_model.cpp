@@ -31,7 +31,7 @@ AgModel::AgModel(AgDevice& agDevice, std::vector<Vertex>& vertices, std::vector<
     : agDevice(agDevice)
 {
     createVertexBuffer(vertices);
-    //createIndexBuffer(indices);
+    createIndexBuffer(indices);
 }
 
 AgModel::~AgModel()
@@ -53,7 +53,6 @@ void AgModel::createVertexBuffer(std::vector<Vertex>& vertices)
 
     VkResult res = stagingBuffer.map();
     stagingBuffer.write(vertices.data());
-    //stagingBuffer.unmap();
 
     vertexBuffer = std::make_unique<AgBuffer>(
         agDevice,
@@ -68,21 +67,52 @@ void AgModel::createVertexBuffer(std::vector<Vertex>& vertices)
 
 void AgModel::createIndexBuffer(std::vector<uint32_t>& indices)
 {
-    // not implemented yet
+    indexCount = static_cast<uint32_t>(indices.size());
+
+    if (indexCount == 0)
+        return;
+
+    hasIndexBuffer = true;
+
+    AgBuffer stagingBuffer{
+        agDevice,
+        sizeof(uint32_t),
+        indexCount,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    };
+
+    VkResult res = stagingBuffer.map();
+    stagingBuffer.write(indices.data());
+
+    indexBuffer = std::make_unique<AgBuffer>(
+        agDevice,
+        sizeof(uint32_t),
+        indexCount,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
+
+    agDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), indexBuffer->getSize());
 }
 
 void AgModel::bind(VkCommandBuffer commandBuffer)
 {
-    // bind vertexBuffer
+    // bind vertex buffer
     VkBuffer buffers[] = { vertexBuffer->getBuffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
-    // bind index buffer TODO
-
+    // bind index buffer
+    if (hasIndexBuffer)
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
 void AgModel::draw(VkCommandBuffer commandBuffer)
 {
-    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+    if (hasIndexBuffer)
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+
+    else
+        vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 }

@@ -15,7 +15,7 @@
 class SimpleRenderSystem
 {
 public:
-	SimpleRenderSystem(AgDevice& agDevice, VkRenderPass renderPass);
+	SimpleRenderSystem(AgDevice& agDevice, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
 	~SimpleRenderSystem();
 	
 	struct PushConstants
@@ -24,7 +24,8 @@ public:
 		glm::mat4 transform_matrix;
 	};
 
-	void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject> gameObjects);
+
+	void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject> gameObjects, VkDescriptorSet descriptorSet);
 
 private:
 	// pipeline
@@ -34,7 +35,7 @@ private:
 	// astro ref
 	AgDevice& agDevice;
 
-	void createPipelineLayout();
+	void createPipelineLayout(VkDescriptorSetLayout descriptorSetLayout);
 	void createPipeline(VkRenderPass renderpass);
 };
 

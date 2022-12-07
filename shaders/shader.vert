@@ -7,11 +7,17 @@ layout(location = 0) out vec3 fragColor;
 
 layout( push_constant ) uniform constants
 {
-	mat4 data;
-	mat4 transform_matrix;
+	mat4 data1;
+	mat4 data2;
 } pushConstants;
 
+layout(binding = 0) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+
 void main() {
-    gl_Position = pushConstants.transform_matrix * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
     fragColor = inColor;
 }

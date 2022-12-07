@@ -5,10 +5,10 @@
 #include <memory>
 
 
-SimpleRenderSystem::SimpleRenderSystem(AgDevice& agDevice, VkRenderPass renderPass)
+SimpleRenderSystem::SimpleRenderSystem(AgDevice& agDevice, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout)
 	: agDevice(agDevice)
 {
-	createPipelineLayout();
+	createPipelineLayout(descriptorSetLayout);
 	createPipeline(renderPass);
 }
 
@@ -17,9 +17,10 @@ SimpleRenderSystem::~SimpleRenderSystem()
 	vkDestroyPipelineLayout(agDevice.getDevice(), pipelineLayout, nullptr);
 }
 
-void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject> gameObjects)
+void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject> gameObjects, VkDescriptorSet descriptorSet)
 {
 	agPipeline->bind(commandBuffer);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
 	for (auto gameObject : gameObjects)
 	{
@@ -41,7 +42,8 @@ void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::v
 	}
 }
 
-void SimpleRenderSystem::createPipelineLayout()
+
+ void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout descriptorSetLayout)
 {
 	// define push constants
 	VkPushConstantRange pushConstantsInfo{};
@@ -55,8 +57,8 @@ void SimpleRenderSystem::createPipelineLayout()
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.pNext = nullptr; // optional
 	pipelineLayoutInfo.flags = 0; // optional
-	pipelineLayoutInfo.setLayoutCount = 0; // optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // optional
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantsInfo;
 
