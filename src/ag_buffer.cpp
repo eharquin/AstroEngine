@@ -1,6 +1,10 @@
 // astro
 #include "ag_buffer.hpp"
 
+
+// std
+#include <cstring> 
+
 /**
  * Returns the minimum instance size required to be compatible with devices minOffsetAlignment
  *
@@ -53,13 +57,13 @@ void AgBuffer::write(void* data, VkDeviceSize size, VkDeviceSize offset)
 	assert(mapped && "cannot write on unmap memory");
 
 	if (size == VK_WHOLE_SIZE)
-		memcpy(mapped, data, bufferSize);
+		std::memcpy(mapped, data, bufferSize);
 
 	else
 	{
 		char* memOffset = (char*)mapped;
 		memOffset += offset;
-		memcpy(memOffset, data, size);
+		std::memcpy(memOffset, data, size);
 	}
 }
 

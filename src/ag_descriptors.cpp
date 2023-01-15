@@ -3,7 +3,7 @@
 
 // ********************* Descriptor Pool *********************
 
-AgDescriptorPool::AgDescriptorPool(AgDevice& agDevice, uint32_t poolSizeCount, VkDescriptorPoolSize* poolSizes, VkDescriptorPoolCreateFlags flags = 0, uint32_t maxSets = 1000)
+AgDescriptorPool::AgDescriptorPool(AgDevice& agDevice, uint32_t poolSizeCount, VkDescriptorPoolSize* poolSizes, VkDescriptorPoolCreateFlags flags, uint32_t maxSets)
 	: agDevice(agDevice)
 {
 	VkDescriptorPoolCreateInfo descriptorPoolInfo{};
@@ -78,22 +78,41 @@ AgDescriptorSetWriter::~AgDescriptorSetWriter()
 {
 }
 
-void AgDescriptorSetWriter::writeBuffer(uint32_t binding, VkDescriptorBufferInfo bufferInfo)
+void AgDescriptorSetWriter::writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
 {
-
 	auto& bindingDescription = layout.bindingsMap[binding];
 
 	assert(bindingDescription.descriptorCount == 1 && "Binding single descriptor info, but binding expects multiple");
 
-	VkWriteDescriptorSet descriptorWrite{};
+	VkWriteDescriptorSet descriptorWrite;
 	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrite.pNext = nullptr;
 	descriptorWrite.dstBinding = bindingDescription.binding;
 	descriptorWrite.dstArrayElement = 0;
 	descriptorWrite.descriptorType = bindingDescription.descriptorType;
 	descriptorWrite.descriptorCount = 1;
-	descriptorWrite.pBufferInfo = &bufferInfo;
+	descriptorWrite.pBufferInfo = bufferInfo;
 	descriptorWrite.pImageInfo = nullptr; // optional
+	descriptorWrite.pTexelBufferView = nullptr; // optional
+
+	writes.push_back(descriptorWrite);
+}
+
+void AgDescriptorSetWriter::writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo)
+{
+	auto& bindingDescription = layout.bindingsMap[binding];
+
+	assert(bindingDescription.descriptorCount == 1 && "Binding single descriptor info, but binding expects multiple");
+
+	VkWriteDescriptorSet descriptorWrite;
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.pNext = nullptr;
+	descriptorWrite.dstBinding = bindingDescription.binding;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = bindingDescription.descriptorType;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pBufferInfo = nullptr; // optional
+	descriptorWrite.pImageInfo = imageInfo; // optional
 	descriptorWrite.pTexelBufferView = nullptr; // optional
 
 	writes.push_back(descriptorWrite);
@@ -102,88 +121,10 @@ void AgDescriptorSetWriter::writeBuffer(uint32_t binding, VkDescriptorBufferInfo
 
 void AgDescriptorSetWriter::overwrite(VkDescriptorSet& descriptorSet)
 {
-	for (auto &write : writes)
-		write.dstSet = descriptorSet;
+	for (int i = 0; i < writes.size(); i++)
+	{
+		writes.at(i).dstSet = descriptorSet;
+	}
 
 	vkUpdateDescriptorSets(layout.agDevice.getDevice(), writes.size(), writes.data(), 0, nullptr);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//AgDescriptorSet::AgDescriptorSet(AgDevice& agDevice, uint32_t descriptorSetCount)
-//	: agDevice(agDevice), descriptorSetCount(descriptorSetCount)
-//{
-//
-//}
-//
-//AgDescriptorSet::~AgDescriptorSet() {}
-//
-//void AgDescriptorSet::allocate(VkDescriptorSetLayout layout, VkDescriptorPool pool)
-//{
-//	std::vector<VkDescriptorSetLayout> layouts(descriptorSetCount, layout);
-//
-//	VkDescriptorSetAllocateInfo allocInfo{};
-//	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-//	allocInfo.descriptorPool = pool;
-//	allocInfo.descriptorSetCount = descriptorSetCount;
-//	allocInfo.pSetLayouts = layouts.data();
-//
-//	descriptorSets.resize(agDevice.MAX_FRAMES_IN_FLIGHT);
-//
-//	if (vkAllocateDescriptorSets(agDevice.getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-//		throw std::runtime_error("failed to allocate descriptor sets!");
-//	}
-//}
-//
-//void AgDescriptorSet::writeBuffers(VkDescriptorType descriptorType, AgBuffer* buffers)
-//{
-//	for (size_t i = 0; i < descriptorSetCount; i++) {
-//		VkDescriptorBufferInfo bufferInfo = buffers[i]->getDescriptorBufferInfo();
-//
-//		VkWriteDescriptorSet descriptorWrite{};
-//		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-//		descriptorWrite.dstSet = descriptorSets[i];
-//		descriptorWrite.dstBinding = 0; // ??
-//		descriptorWrite.dstArrayElement = 0;
-//		descriptorWrite.descriptorType = descriptorType;
-//		descriptorWrite.descriptorCount = 1;
-//		descriptorWrite.pBufferInfo = &bufferInfo;
-//		descriptorWrite.pImageInfo = nullptr; // optional
-//		descriptorWrite.pTexelBufferView = nullptr; // optional
-//
-//		writeDescriptorSets.push_back(descriptorWrite);
-//
-//		vkUpdateDescriptorSets(agDevice.getDevice(), 1, &descriptorWrite, 0, nullptr);
-//	}
-//}
-//
-//void AgDescriptorSet::writeImages()
-//{
-//
-//}
-//
-//void AgDescriptorSet::writeTexels()
-//{
-//
-//}
-//
-//void AgDescriptorSet::updateDescriptors()
-//{
-//	vkUpdateDescriptorSets(agDevice.getDevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-//}
-
-

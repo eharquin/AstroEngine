@@ -11,7 +11,7 @@
 class AgDescriptorPool
 {
 public:
-	AgDescriptorPool(AgDevice& agDevice, uint32_t poolSizeCount, VkDescriptorPoolSize* poolSizes, VkDescriptorPoolCreateFlags flags, uint32_t maxSets);
+	AgDescriptorPool(AgDevice& agDevice, uint32_t poolSizeCount, VkDescriptorPoolSize* poolSizes, VkDescriptorPoolCreateFlags flags = 0, uint32_t maxSets = 1000);
 	~AgDescriptorPool();
 
 	VkDescriptorPool getPool() const { return pool; }
@@ -55,8 +55,8 @@ public:
 	AgDescriptorSetWriter(AgDescriptorSetLayout& layout);
 	~AgDescriptorSetWriter();
 	
-	void writeBuffer(uint32_t binding, VkDescriptorBufferInfo bufferInfo);
-	void writeImage();
+	void writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
+	void writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
 	void writeTexel();
 
 	void overwrite(VkDescriptorSet& descriptorSet);
@@ -65,5 +65,5 @@ private:
 	// astro ref
 	AgDescriptorSetLayout& layout;
 
-	std::vector<VkWriteDescriptorSet> writes;
+	std::vector<VkWriteDescriptorSet> writes{};
 };

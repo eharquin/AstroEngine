@@ -23,6 +23,7 @@ public:
 	// swap chain
 	VkSwapchainKHR getSwapChain() { return swapChain; }
 	VkExtent2D getExtent() { return swapChainExtent; }
+	const float getAspectRatio() const { return swapChainExtent.width / swapChainExtent.height; }
 	uint32_t getCurrentFrame() { return currentFrame; }
 	bool compareSwapFormat(const AgSwapChain& swapChain) const
 	{
@@ -34,6 +35,9 @@ public:
 
 	// frame buffer
 	VkFramebuffer getFramebuffer(int i) { return swapChainFramebuffers[i]; }
+
+	// depth buffer
+
 
 	// execution
 	VkResult aquireNextImage(uint32_t* imageIndex);
@@ -61,9 +65,22 @@ private:
 	VkRenderPass renderPass;
 	void createRenderPass();
 
-	// framebuffers
+	// frame buffer
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	void createFrameBuffers();
+
+	// color image (Multisampling)
+	VkImage colorImage;
+	VkDeviceMemory colorImageMemory;
+	VkImageView colorImageView;
+	void createColorResources();
+
+	// depth buffer
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
+	void createDepthResources();
+	VkFormat findDepthFormat();
 
 	// sync objects
 	std::vector<VkSemaphore> imageAvailableSemaphores;

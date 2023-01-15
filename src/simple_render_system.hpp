@@ -25,7 +25,7 @@ public:
 	};
 
 
-	void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject> gameObjects, VkDescriptorSet descriptorSet);
+	void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject>& gameObjects, VkDescriptorSet descriptorSet);
 
 private:
 	// pipeline

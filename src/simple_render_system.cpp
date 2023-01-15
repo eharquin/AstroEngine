@@ -4,7 +4,6 @@
 // std
 #include <memory>
 
-
 SimpleRenderSystem::SimpleRenderSystem(AgDevice& agDevice, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout)
 	: agDevice(agDevice)
 {
@@ -17,27 +16,22 @@ SimpleRenderSystem::~SimpleRenderSystem()
 	vkDestroyPipelineLayout(agDevice.getDevice(), pipelineLayout, nullptr);
 }
 
-void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject> gameObjects, VkDescriptorSet descriptorSet)
+void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<AgGameObject>& gameObjects, VkDescriptorSet descriptorSet)
 {
 	agPipeline->bind(commandBuffer);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-	for (auto gameObject : gameObjects)
+	for (auto& gameObject : gameObjects)
 	{
-		gameObject.model->bind(commandBuffer);
-
-		glm::mat4 projection = glm::mat4(1.0f);
-		glm::mat4 view = glm::mat4(1.0f);
-		glm::mat4 model = gameObject.transform();
-
-		glm::mat4 tranform_matrix = projection * view * model;
+		
 
 		PushConstants pushConstants{};
-		pushConstants.data = glm::mat4( 0.0f );
-		pushConstants.transform_matrix = tranform_matrix;
+		pushConstants.data = glm::mat4( 1.0f );
+		pushConstants.transform_matrix = gameObject.transform.mat4();
 
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pushConstants);
 
+		gameObject.model->bind(commandBuffer);
 		gameObject.model->draw(commandBuffer);
 	}
 }

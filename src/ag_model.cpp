@@ -1,4 +1,13 @@
+// astro
 #include "ag_model.hpp"
+
+// tiny obj loader
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+bool AgModel::Vertex::operator==(const Vertex& other) const {
+    return position == other.position && color == other.color && texCoord == other.texCoord;
+}
 
 VkVertexInputBindingDescription AgModel::Vertex::getBindingDescription()
 {
@@ -10,9 +19,9 @@ VkVertexInputBindingDescription AgModel::Vertex::getBindingDescription()
     return bindingDescription;
 }
 
-std::array<VkVertexInputAttributeDescription, 2> AgModel::Vertex::getAttributeDescriptions()
+std::array<VkVertexInputAttributeDescription, 3> AgModel::Vertex::getAttributeDescriptions()
 {
-    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
@@ -24,7 +33,20 @@ std::array<VkVertexInputAttributeDescription, 2> AgModel::Vertex::getAttributeDe
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributeDescriptions[1].offset = offsetof(Vertex, color);
 
+    attributeDescriptions[2].binding = 0;
+    attributeDescriptions[2].location = 2;
+    attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+    attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
     return attributeDescriptions;
+}
+
+AgModel::AgModel(AgDevice& agDevice, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, const std::string textureFile)
+    : agDevice(agDevice)
+{
+    createVertexBuffer(vertices);
+    createIndexBuffer(indices);
+    createTexture(textureFile);
 }
 
 AgModel::AgModel(AgDevice& agDevice, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
@@ -32,6 +54,21 @@ AgModel::AgModel(AgDevice& agDevice, std::vector<Vertex>& vertices, std::vector<
 {
     createVertexBuffer(vertices);
     createIndexBuffer(indices);
+    texture = std::make_unique<AgTexture>(agDevice);
+}
+
+AgModel::AgModel(AgDevice& agDevice, std::vector<Vertex>& vertices)
+    : agDevice(agDevice)
+{
+    createVertexBuffer(vertices);
+    texture = std::make_unique<AgTexture>(agDevice);
+}
+
+AgModel::AgModel(AgDevice& agDevice, const std::string modelFile, const std::string textureFile)
+    : agDevice(agDevice)
+{
+    loadModel(modelFile);
+    createTexture(textureFile);
 }
 
 AgModel::~AgModel()
@@ -96,6 +133,11 @@ void AgModel::createIndexBuffer(std::vector<uint32_t>& indices)
     agDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), indexBuffer->getSize());
 }
 
+void AgModel::createTexture(const std::string textureFile)
+{
+    texture = std::make_unique<AgTexture>(agDevice, textureFile);
+}
+
 void AgModel::bind(VkCommandBuffer commandBuffer)
 {
     // bind vertex buffer
@@ -115,4 +157,50 @@ void AgModel::draw(VkCommandBuffer commandBuffer)
 
     else
         vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+}
+
+void AgModel::loadModel(const std::string modelFile)
+{
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+    
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, modelFile.c_str())) 
+        throw std::runtime_error(warn + err);
+
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+    for (const auto& shape : shapes)
+    {
+        for (const auto& index : shape.mesh.indices)
+        {
+            Vertex vertex{};
+            
+            vertex.position = {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+
+            vertex.texCoord = {
+                attrib.texcoords[2 * index.texcoord_index + 0],
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+            };
+
+            vertex.color = { 1.0f, 1.0f, 1.0f };
+
+            if (uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+
+            indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+    createVertexBuffer(vertices);
+    createIndexBuffer(indices);
 }

@@ -30,6 +30,8 @@ public:
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	uint32_t getCurrentFrame() const { return agSwapChain->getCurrentFrame(); }
+	VkExtent2D getSwapChainExtent() const { return agSwapChain->getExtent(); }
+	const float getAspectRatio() const { return agSwapChain->getAspectRatio(); }
 
 	VkRenderPass getRenderPass() const { return agSwapChain->getRenderPass(); }
 	bool isFrameInProgress() const { return isFrameStarted; }

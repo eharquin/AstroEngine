@@ -5,6 +5,19 @@
 // std
 #include <memory>
 
+struct TransformComponent {
+	glm::vec3 translation{};
+	glm::vec3 scale{ 1.f, 1.f, 1.f };
+	glm::vec3 rotation{};
+
+	// Matrix corrsponds to Translate * Ry * Rx * Rz * Scale
+	// Rotations correspond to Tait-bryan angles of Y(1), X(2), Z(3)
+	// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+	glm::mat4 mat4();
+
+	glm::mat3 normalMatrix();
+};
+
 class AgGameObject
 {
 public:
@@ -16,34 +29,11 @@ public:
 		return AgGameObject{ currentId++ };
 	}
 
-	glm::mat4 transform()
-	{
-		auto transform = glm::mat4{ 1.0f };
-
-		transform = glm::scale(transform, scale);
-		// rotation 
-		transform = glm::translate(transform, position);
-		
-		return transform;
-	}
-
-	//AgGameObject(const AgGameObject &) = delete;
-	//AgGameObject &operator=(const AgGameObject &) = delete;
-	//AgGameObject(AgGameObject &&) = default;
-	//AgGameObject &operator=(AgGameObject &&) = default;
-
 	id_t getId() { return id; }
 
 	std::shared_ptr<AgModel> model;
-
-	glm::vec3 position{};
-	glm::vec2 velocity{};
 	glm::vec3 color{};
-
-	glm::vec3 rotation{0.0f};
-	glm::vec3 scale{ 1.0f };
-
-	float mass = 0;
+	TransformComponent transform{};
 
 private:
 	AgGameObject(id_t objId) : id{objId} {}
