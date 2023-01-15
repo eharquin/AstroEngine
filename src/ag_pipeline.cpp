@@ -93,9 +93,9 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.pNext = nullptr; // optional
 	viewportState.flags = 0; // optional
-	viewportState.viewportCount = 0;
+	viewportState.viewportCount = 1;
 	viewportState.pViewports = nullptr;
-	viewportState.scissorCount = 0;
+	viewportState.scissorCount = 1;
 	viewportState.pScissors = nullptr;
 
 	VkPipelineRasterizationStateCreateInfo rasterizer{};

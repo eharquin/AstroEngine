@@ -275,6 +275,9 @@ void AgDevice::createDevice()
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.enabledLayerCount = 0; // deprecated
 	createInfo.ppEnabledLayerNames = nullptr; // deprecated
+#ifdef __APPLE__
+    deviceExtensions.emplace_back("VK_KHR_portability_subset");
+#endif
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	createInfo.pEnabledFeatures = &deviceFeatures;

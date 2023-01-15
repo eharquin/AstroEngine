@@ -42,7 +42,7 @@ public:
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
-	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device); // TODO : check when it should be reask
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }

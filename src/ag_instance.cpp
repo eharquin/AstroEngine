@@ -51,7 +51,7 @@ void AgInstance::createInstance()
 
     // get required extensions
     std::vector<const char*> requiredExtensions = getRequiredExtensions();
-    
+
     // get available instance extensions
     std::vector<VkExtensionProperties> extensions = getInstanceExtensions();
 
@@ -70,19 +70,13 @@ void AgInstance::createInstance()
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledLayerCount = layerCount;
     createInfo.ppEnabledLayerNames = layerNames.data();
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
-    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
 #ifdef __APPLE__
-    std::vector<const char*> requiredExtensions;
-    for (uint32_t i = 0; i < glfwExtensionCount; i++)
-        requiredExtensions.emplace_back(glfwExtensionsNames[i]);
     requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-
     createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-    createInfo.enabledExtensionCount = (uint32_t)requiredExtensions.size();
-    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 #endif
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+    createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
         throw std::runtime_error("failed to create instance!");
@@ -150,7 +144,7 @@ bool AgInstance::checkValidationLayerSupport()
         bool layerFound = false;
         for (const auto& layerProperties : availableLayers)
         {
-            if (std::strcmp(layerName, layerProperties.layerName) == 0) 
+            if (std::strcmp(layerName, layerProperties.layerName) == 0)
             {
                 layerFound = true;
                 break;

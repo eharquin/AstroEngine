@@ -4,6 +4,7 @@
 // tiny obj loader
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+#include <unordered_map>
 
 bool AgModel::Vertex::operator==(const Vertex& other) const {
     return position == other.position && color == other.color && texCoord == other.texCoord;
