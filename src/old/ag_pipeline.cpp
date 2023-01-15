@@ -58,6 +58,13 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 
 	std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.pNext = nullptr; // optional
+	dynamicState.flags = 0; // optional
+	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicState.pDynamicStates = dynamicStates.data();
+
 	auto bindingDescription = AgModel::Vertex::getBindingDescription();
 	auto attributeDescriptions = AgModel::Vertex::getAttributeDescriptions();
 
@@ -98,6 +105,7 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	viewportState.scissorCount = 0;
 	viewportState.pScissors = nullptr;
 
+
 	VkPipelineRasterizationStateCreateInfo rasterizer{};
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.pNext = nullptr; // optional
@@ -105,7 +113,7 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f; // optional
@@ -117,9 +125,9 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.pNext = nullptr; // optional
 	multisampling.flags = 0; // optional
-	multisampling.rasterizationSamples = agDevice.getMsaaSamplesCount();
-	multisampling.sampleShadingEnable = VK_TRUE;
-	multisampling.minSampleShading = .2f; // min fraction for sample shading; closer to one is smooth
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.minSampleShading = 1.0f; // optional
 	multisampling.pSampleMask = nullptr; // optional
 	multisampling.alphaToCoverageEnable = VK_FALSE; // optional
 	multisampling.alphaToOneEnable = VK_FALSE; // optional
@@ -134,19 +142,6 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // optional
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
-	VkPipelineDepthStencilStateCreateInfo depthStencil{};
-	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.pNext = nullptr; // optional
-	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencil.depthBoundsTestEnable = VK_FALSE;
-	depthStencil.minDepthBounds = 0.0f; // Optional
-	depthStencil.maxDepthBounds = 1.0f; // Optional
-	depthStencil.stencilTestEnable = VK_FALSE;
-	depthStencil.front = {}; // Optional
-	depthStencil.back = {}; // Optional
-
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlending.pNext = nullptr; // optional
@@ -160,13 +155,6 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	colorBlending.blendConstants[2] = 0.0f; // optional
 	colorBlending.blendConstants[3] = 0.0f; // optional
 
-	VkPipelineDynamicStateCreateInfo dynamicState{};
-	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicState.pNext = nullptr; // optional
-	dynamicState.flags = 0; // optional
-	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-	dynamicState.pDynamicStates = dynamicStates.data();
-
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.pNext = nullptr; // optional
@@ -179,7 +167,7 @@ void AgPipeline::createGraphicsPipeline(VkPipelineLayout pipelineLayout, VkRende
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = &depthStencil;
+	pipelineInfo.pDepthStencilState = nullptr; // optional
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;

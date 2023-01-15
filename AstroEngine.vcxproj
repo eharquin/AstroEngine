@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.props" Condition="Exists('packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -19,33 +20,48 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ag_buffer.cpp" />
+    <ClCompile Include="src\ag_camera.cpp" />
+    <ClCompile Include="src\ag_descriptors.cpp" />
     <ClCompile Include="src\ag_device.cpp" />
+    <ClCompile Include="src\ag_game_object.cpp" />
+    <ClCompile Include="src\ag_model.cpp" />
+    <ClCompile Include="src\ag_renderer.cpp" />
     <ClCompile Include="src\ag_swap_chain.cpp" />
+    <ClCompile Include="src\ag_texture.cpp" />
     <ClCompile Include="src\app.cpp" />
-    <ClCompile Include="src\ag_command_buffer.cpp" />
     <ClCompile Include="src\ag_instance.cpp" />
+    <ClCompile Include="src\KeyboardController.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\ag_pipeline.cpp" />
-    <ClCompile Include="src\sync_objects.cpp" />
-    <ClCompile Include="src\vertex.cpp" />
-    <ClCompile Include="src\vertex_buffer.cpp" />
     <ClCompile Include="src\ag_window.cpp" />
+    <ClCompile Include="src\simple_render_system.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+    <None Include="packages.config" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ag_command_buffer.hpp" />
+    <ClInclude Include="src\ag_buffer.hpp" />
+    <ClInclude Include="src\ag_camera.hpp" />
+    <ClInclude Include="src\ag_descriptors.hpp" />
     <ClInclude Include="src\ag_device.hpp" />
+    <ClInclude Include="src\ag_game_object.hpp" />
+    <ClInclude Include="src\ag_model.hpp" />
+    <ClInclude Include="src\ag_renderer.hpp" />
+    <ClInclude Include="src\ag_texture.hpp" />
+    <ClInclude Include="src\KeyboardController.hpp" />
+    <ClInclude Include="src\simple_render_system.hpp" />
     <ClInclude Include="src\ag_swap_chain.hpp" />
     <ClInclude Include="src\app.hpp" />
     <ClInclude Include="src\ag_instance.hpp" />
     <ClInclude Include="src\ag_pipeline.hpp" />
-    <ClInclude Include="src\sync_objects.hpp" />
-    <ClInclude Include="src\vertex.hpp" />
-    <ClInclude Include="src\vertex_buffer.hpp" />
     <ClInclude Include="src\ag_window.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\bejam.jpg" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -173,5 +189,13 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.targets" Condition="Exists('packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>Ce projet fait référence à des packages NuGet qui sont manquants sur cet ordinateur. Utilisez l'option de restauration des packages NuGet pour les télécharger. Pour plus d'informations, consultez http://go.microsoft.com/fwlink/?LinkID=322105. Le fichier manquant est : {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Windows.CppWinRT.2.0.220531.1\build\native\Microsoft.Windows.CppWinRT.targets'))" />
+  </Target>
 </Project>

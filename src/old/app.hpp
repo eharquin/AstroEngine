@@ -3,20 +3,21 @@
 #include "ag_window.hpp"
 #include "ag_instance.hpp"
 #include "ag_device.hpp"
+
 #include "ag_renderer.hpp"
-#include "ag_descriptors.hpp"
-#include "ag_camera.hpp"
-
-#include "KeyboardController.hpp"
-
 #include "simple_render_system.hpp"
+#include "ag_descriptors.hpp"
 
+
+
+#include "sierpinski_triangle_system.hpp"
 
 // libs
 #include "GLFW/glfw3.h"
 
 // std
 #include <vector>
+
 
 class App
 {
@@ -51,9 +52,11 @@ private:
 
 	std::unique_ptr<AgDescriptorPool> globalPool;
 
-	void loadGameObject();
-	std::unique_ptr<AgModel> testCubeFace();
-	void processInput(GLFWwindow* window);
 
-	bool objectsRotation = false;
+
+	AgGameObject createTriangleModel();
+
+	void loadGameObjects();
+
+	void processInput(GLFWwindow* window);
 };

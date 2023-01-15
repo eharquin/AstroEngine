@@ -7,7 +7,6 @@
 #include <stdexcept>
 #include <iostream>
 #include <vector>
-#include <cstring>
 
 AgInstance::AgInstance()
 {
@@ -38,7 +37,7 @@ void AgInstance::createInstance()
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "AstroEngine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    appInfo.apiVersion = VK_API_VERSION_1_0;
 
     // get layers to enable
     uint32_t layerCount = 0;
@@ -150,7 +149,7 @@ bool AgInstance::checkValidationLayerSupport()
         bool layerFound = false;
         for (const auto& layerProperties : availableLayers)
         {
-            if (std::strcmp(layerName, layerProperties.layerName) == 0) 
+            if (strcmp(layerName, layerProperties.layerName) == 0) 
             {
                 layerFound = true;
                 break;
@@ -174,7 +173,4 @@ void AgInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInf
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
     createInfo.pUserData = nullptr; // optional
-
-    //VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
-
 }
